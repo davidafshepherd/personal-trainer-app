@@ -8,17 +8,18 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.runtime.remember
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.runtime.entryProvider
+import com.example.personaltrainerapp.data.UserProfile
 import com.example.personaltrainerapp.data.UserRole
 import com.example.personaltrainerapp.navigation.*
 
 @Composable
 fun AppFrame(
-    role: UserRole,
+    user: UserProfile,
     modifier: Modifier = Modifier
 ) {
-    val destinations = topLevelDestinationsFor(role)
+    val destinations = topLevelDestinationsFor(user.role)
 
-    val startRoute = when (role) {
+    val startRoute = when (user.role) {
         UserRole.TRAINEE -> TraineeHomeRoute
         UserRole.TRAINER -> TrainerHomeRoute
     }
