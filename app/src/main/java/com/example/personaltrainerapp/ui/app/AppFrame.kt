@@ -13,26 +13,28 @@ import com.example.personaltrainerapp.data.UserRole
 import com.example.personaltrainerapp.navigation.*
 
 @Composable
-fun AppFrame(
-    user: UserProfile,
-    modifier: Modifier = Modifier
-) {
+fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
+    // Top level destinations
     val destinations = topLevelDestinationsFor(user.role)
 
+    // Start route
     val startRoute = when (user.role) {
         UserRole.TRAINEE -> TraineeHomeRoute
         UserRole.TRAINER -> TrainerHomeRoute
     }
 
+    // Navigation state
     val navState = rememberNavigationState(
         startRoute = startRoute,
         topLevelRoutes = destinations.map { it.route }.toSet()
     )
 
+    // Navigator
     val navigator = remember(navState) {
         Navigator(navState)
     }
 
+    // Entry provider
     val entryProvider = entryProvider {
         entry<TraineeHomeRoute> { BlankScreen("Home") }
         entry<TraineeCalendarRoute> { BlankScreen("Calendar") }
@@ -46,6 +48,7 @@ fun AppFrame(
         entry<TrainerProfileRoute> { ProfileScreen(role = UserRole.TRAINER) }
     }
 
+    // Navigation suite scaffold
     NavigationSuiteScaffold(
         modifier = modifier,
         navigationSuiteItems = {
@@ -64,6 +67,7 @@ fun AppFrame(
             }
         }
     ) {
+        // Navigation display
         NavDisplay(
             entries = navState.toDecoratedEntries(entryProvider),
             onBack = { navigator.goBack() }
