@@ -15,6 +15,7 @@ import com.example.personaltrainerapp.data.UserProfile
 import com.example.personaltrainerapp.data.UserRole
 import com.example.personaltrainerapp.navigation.*
 import com.example.personaltrainerapp.ui.trainer.TrainerScreen
+import com.example.personaltrainerapp.ui.workouts.WorkoutsScreen
 
 @Composable
 fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
@@ -37,7 +38,7 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
     val entryProvider = entryProvider {
         entry<TraineeHomeRoute> { BlankScreen("Home") }
         entry<TraineeCalendarRoute> { BlankScreen("Calendar") }
-        entry<TraineeWorkoutsRoute> { BlankScreen("Workouts") }
+        entry<TraineeWorkoutsRoute> { WorkoutsScreen() }
         entry<TraineeTrainerRoute> { TrainerScreen() }
         entry<TraineeProfileRoute> { ProfileScreen(role = UserRole.TRAINEE) }
 

@@ -3,7 +3,6 @@ package com.example.personaltrainerapp.ui.trainer
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,8 +26,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,20 +39,28 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.personaltrainerapp.data.TrainerTags
 import com.example.personaltrainerapp.data.UserProfile
-import com.example.personaltrainerapp.data.UserRole
+import com.example.personaltrainerapp.ui.common.AppHeader
 
 @Composable
-fun TrainerScreen() {
-    var selectedTrainer by remember { mutableStateOf<UserProfile?>(null) }
+fun TrainerScreen(
+    traineeId: String = "demo-user"
+) {
+    val viewModel = remember { TrainerViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
+
     var isSearching by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadTrainers()
+    }
+
     when {
-        selectedTrainer != null -> {
+        uiState.selectedTrainer != null -> {
             TrainerProfileScreen(
-                trainer = selectedTrainer!!,
+                trainer = uiState.selectedTrainer!!,
                 onBack = {
-                    selectedTrainer = null
                     isSearching = true
                 }
             )
@@ -60,9 +68,14 @@ fun TrainerScreen() {
 
         isSearching -> {
             TrainerSearchScreen(
+                trainers = uiState.trainers,
+                isLoading = uiState.isLoading,
                 onBack = { isSearching = false },
                 onTrainerSelected = { trainer ->
-                    selectedTrainer = trainer
+                    viewModel.selectTrainer(
+                        traineeId = traineeId,
+                        trainer = trainer
+                    )
                     isSearching = false
                 }
             )
@@ -83,95 +96,52 @@ private fun NoTrainerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        Text(
-            text = "It looks like you don't\nhave a trainer yet!",
-            textAlign = TextAlign.Center
-        )
+        AppHeader(title = "Trainer")
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = onSearchClick) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 56.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "It looks like you don't\nhave a trainer yet!",
+                textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Search")
+            Button(onClick = onSearchClick) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+
+                Spacer(modifier = Modifier.size(8.dp))
+
+                Text("Search")
+            }
         }
     }
 }
 
 @Composable
 private fun TrainerSearchScreen(
+    trainers: List<UserProfile>,
+    isLoading: Boolean,
     onBack: () -> Unit,
     onTrainerSelected: (UserProfile) -> Unit
 ) {
     var searchText by remember { mutableStateOf("") }
     var selectedTags by remember { mutableStateOf(setOf<String>()) }
 
-    val tags = listOf(
-        "cardio",
-        "strength",
-        "flexibility",
-        "endurance",
-        "weight loss",
-        "muscle gain",
-        "mobility",
-        "nutrition",
-        "rehab"
-    )
+    val tags = TrainerTags.all
 
-    val fakeTrainers = listOf(
-        UserProfile(
-            uid = "trainer-1",
-            email = "trainer1@gmail.com",
-            displayName = "Trainer Name",
-            bio = "Cardio, Strength, Flexibility",
-            phoneNumber = "07123 456789",
-            role = UserRole.TRAINER,
-            tags = listOf("cardio", "strength", "flexibility"),
-            profileImageUrl = ""
-        ),
-        UserProfile(
-            uid = "trainer-2",
-            email = "trainer2@gmail.com",
-            displayName = "Trainer Name",
-            bio = "Strength and endurance specialist",
-            phoneNumber = "07123 456780",
-            role = UserRole.TRAINER,
-            tags = listOf("strength", "endurance"),
-            profileImageUrl = ""
-        ),
-        UserProfile(
-            uid = "trainer-3",
-            email = "trainer3@gmail.com",
-            displayName = "Trainer Name",
-            bio = "Flexibility and cardio coach",
-            phoneNumber = "07123 456781",
-            role = UserRole.TRAINER,
-            tags = listOf("flexibility", "cardio"),
-            profileImageUrl = ""
-        ),
-        UserProfile(
-            uid = "trainer-4",
-            email = "trainer4@gmail.com",
-            displayName = "Trainer Name",
-            bio = "General fitness coach",
-            phoneNumber = "07123 456782",
-            role = UserRole.TRAINER,
-            tags = listOf("cardio", "strength", "flexibility"),
-            profileImageUrl = ""
-        )
-    )
-
-    val filteredTrainers = fakeTrainers.filter { trainer ->
+    val filteredTrainers = trainers.filter { trainer ->
         val matchesSearch =
             searchText.isBlank() ||
                     trainer.displayName.contains(searchText, ignoreCase = true)
@@ -189,18 +159,10 @@ private fun TrainerSearchScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onBack) {
-                Text("←")
-            }
-
-            Text(
-                text = "Available Trainers",
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+        AppHeader(
+            title = "Available Trainers",
+            onBack = onBack
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -242,14 +204,26 @@ private fun TrainerSearchScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(filteredTrainers) { trainer ->
-                TrainerListItem(
-                    trainer = trainer,
-                    onClick = { onTrainerSelected(trainer) }
-                )
+        when {
+            isLoading -> {
+                Text("Loading trainers...")
+            }
+
+            filteredTrainers.isEmpty() -> {
+                Text("No trainers found")
+            }
+
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filteredTrainers) { trainer ->
+                        TrainerListItem(
+                            trainer = trainer,
+                            onClick = { onTrainerSelected(trainer) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -260,7 +234,7 @@ private fun TrainerListItem(
     trainer: UserProfile,
     onClick: () -> Unit
 ) {
-    Row(
+    androidx.compose.foundation.layout.Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -307,22 +281,14 @@ private fun TrainerProfileScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onBack) {
-                Text("←")
-            }
-
-            Text(
-                text = "Trainer",
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+        AppHeader(
+            title = "Trainer",
+            onBack = onBack
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Row(
+        androidx.compose.foundation.layout.Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
