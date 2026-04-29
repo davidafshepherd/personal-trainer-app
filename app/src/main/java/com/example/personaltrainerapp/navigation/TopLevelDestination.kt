@@ -9,7 +9,7 @@ import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
-import com.example.personaltrainerapp.data.UserRole
+import com.example.personaltrainerapp.data.user.UserRole
 
 data class TopLevelDestination(
     val label: String,
@@ -23,7 +23,7 @@ fun topLevelDestinationsFor(role: UserRole): List<TopLevelDestination> {
             TopLevelDestination("Home", Icons.Default.Home, TraineeHomeRoute),
             TopLevelDestination("Calendar", Icons.Default.CalendarMonth, TraineeCalendarRoute),
             TopLevelDestination("Workouts", Icons.Default.FitnessCenter, TraineeWorkoutsRoute),
-            TopLevelDestination("Trainer", Icons.Default.Person, TraineeTrainerRoute),
+            TopLevelDestination("Trainer", Icons.Default.Group, TraineeTrainerRoute),
             TopLevelDestination("Profile", Icons.Default.Person, TraineeProfileRoute)
         )
 

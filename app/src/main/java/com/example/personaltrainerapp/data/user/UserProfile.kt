@@ -1,4 +1,4 @@
-package com.example.personaltrainerapp.data
+package com.example.personaltrainerapp.data.user
 
 data class UserProfile(
     val uid: String = "",
@@ -8,5 +8,7 @@ data class UserProfile(
     val phoneNumber: String = "",
     val role: UserRole = UserRole.TRAINEE,
     val tags: List<String> = emptyList(),
-    val profileImageUrl: String = ""
+    val profileImageUrl: String = "",
+
+    val trainerId: String? = null
 )
