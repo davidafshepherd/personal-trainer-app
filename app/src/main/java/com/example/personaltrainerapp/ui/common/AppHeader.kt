@@ -1,5 +1,6 @@
 package com.example.personaltrainerapp.ui.common
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AppHeader(
     title: String,
+    subtitle: String? = null,
     onBack: (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
@@ -37,11 +39,16 @@ fun AppHeader(
             Spacer(modifier = Modifier.width(8.dp))
         }
 
-        Text(
-            text = title,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            if (subtitle != null) {
+                Text(text = subtitle)
+            }
+        }
 
         if (trailingContent != null) {
             trailingContent()
