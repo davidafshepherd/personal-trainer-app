@@ -20,94 +20,65 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.personaltrainerapp.data.workouts.Exercise
+import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.common.AppHeader
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-data class TraineeWorkout(
-    val id: String,
-    val trainerId: String,
-    val traineeId: String,
-    val name: String,
-    val startTime: LocalDateTime,
-    val endTime: LocalDateTime,
-    val exercises: List<TraineeExercise>
-)
-
-data class TraineeExercise(
-    val id: String,
-    val name: String,
-    val muscleGroup: String,
-    val reps: String,
-    val estimatedMinutes: Int,
-    val isComplete: Boolean = false
-)
-
 @Composable
-fun WorkoutsScreen() {
-    var selectedWorkout by remember { mutableStateOf<TraineeWorkout?>(null) }
+fun WorkoutsScreen(
+    traineeId: String = "demo-trainee"
+) {
+    val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<WorkoutsViewModel>()
+    val uiState by viewModel.uiState.collectAsState()
 
-    var workouts by remember {
-        mutableStateOf(
-            listOf(
-                sampleWorkout("1", "Workout 1", LocalDateTime.of(2026, 5, 10, 14, 0)),
-                sampleWorkout("2", "Workout 2", LocalDateTime.of(2026, 5, 11, 13, 0)),
-                sampleWorkout("3", "Workout 3", LocalDateTime.of(2026, 5, 12, 13, 0)),
-                sampleWorkout("4", "Workout 4", LocalDateTime.of(2026, 5, 14, 15, 0)),
-                sampleWorkout("5", "Workout 5", LocalDateTime.of(2026, 5, 18, 14, 0)),
-                sampleWorkout("6", "Workout 6", LocalDateTime.of(2026, 5, 21, 12, 0))
-            )
-        )
+    LaunchedEffect(traineeId) {
+        viewModel.loadWorkouts(traineeId)
     }
 
-    if (selectedWorkout == null) {
-        WorkoutListScreen(
-            workouts = workouts,
-            onWorkoutClick = { selectedWorkout = it }
-        )
-    } else {
-        WorkoutDetailScreen(
-            workout = selectedWorkout!!,
-            onBack = { selectedWorkout = null },
-            onExerciseToggle = { exerciseId ->
-                workouts = workouts.map { workout ->
-                    if (workout.id != selectedWorkout!!.id) {
-                        workout
-                    } else {
-                        val updatedWorkout = workout.copy(
-                            exercises = workout.exercises.map { exercise ->
-                                if (exercise.id == exerciseId) {
-                                    exercise.copy(isComplete = !exercise.isComplete)
-                                } else {
-                                    exercise
-                                }
-                            }
-                        )
-
-                        selectedWorkout = updatedWorkout
-                        updatedWorkout
-                    }
+    when {
+        uiState.selectedWorkout != null -> {
+            WorkoutDetailScreen(
+                workout = uiState.selectedWorkout!!,
+                onBack = { viewModel.clearSelectedWorkout() },
+                onExerciseToggle = { exerciseId ->
+                    viewModel.toggleExerciseComplete(
+                        workoutId = uiState.selectedWorkout!!.id,
+                        exerciseId = exerciseId
+                    )
                 }
-            }
-        )
+            )
+        }
+
+        else -> {
+            WorkoutListScreen(
+                workouts = uiState.workouts,
+                isLoading = uiState.isLoading,
+                error = uiState.error,
+                onWorkoutClick = { workout ->
+                    viewModel.selectWorkout(workout)
+                }
+            )
+        }
     }
 }
 
 @Composable
 private fun WorkoutListScreen(
-    workouts: List<TraineeWorkout>,
-    onWorkoutClick: (TraineeWorkout) -> Unit
+    workouts: List<Workout>,
+    isLoading: Boolean,
+    error: String?,
+    onWorkoutClick: (Workout) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -115,20 +86,35 @@ private fun WorkoutListScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         AppHeader(
-            title = "Upcoming Workouts",
-            onBack = {}
+            title = "Upcoming Workouts"
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(18.dp)
-        ) {
-            items(workouts.sortedBy { it.startTime }) { workout ->
-                WorkoutListItem(
-                    workout = workout,
-                    onClick = { onWorkoutClick(workout) }
-                )
+        when {
+            isLoading -> {
+                Text("Loading workouts...")
+            }
+
+            error != null -> {
+                Text(error)
+            }
+
+            workouts.isEmpty() -> {
+                Text("No upcoming workouts")
+            }
+
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
+                    items(workouts.sortedBy { it.startTime }) { workout ->
+                        WorkoutListItem(
+                            workout = workout,
+                            onClick = { onWorkoutClick(workout) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -136,7 +122,7 @@ private fun WorkoutListScreen(
 
 @Composable
 private fun WorkoutListItem(
-    workout: TraineeWorkout,
+    workout: Workout,
     onClick: () -> Unit
 ) {
     Row(
@@ -170,7 +156,7 @@ private fun WorkoutListItem(
 
 @Composable
 private fun WorkoutDetailScreen(
-    workout: TraineeWorkout,
+    workout: Workout,
     onBack: () -> Unit,
     onExerciseToggle: (String) -> Unit
 ) {
@@ -182,35 +168,21 @@ private fun WorkoutDetailScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onBack) {
-                Text("←")
+        AppHeader(
+            title = workout.name,
+            subtitle = "Estimated ${estimatedWorkoutMinutes(workout)} min",
+            onBack = onBack,
+            trailingContent = {
+                IconButton(onClick = {}) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More"
+                    )
+                }
             }
+        )
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = workout.name,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Text(
-                    text = "Estimated ${estimatedWorkoutMinutes(workout)} min"
-                )
-            }
-
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "More"
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         if (!canCompleteExercises) {
             Text(
@@ -237,7 +209,7 @@ private fun WorkoutDetailScreen(
 
 @Composable
 private fun ExerciseListItem(
-    exercise: TraineeExercise,
+    exercise: Exercise,
     canComplete: Boolean,
     onToggle: () -> Unit
 ) {
@@ -266,7 +238,7 @@ private fun ExerciseListItem(
             )
 
             Text(
-                text = "${exercise.reps} reps (${exercise.estimatedMinutes} min)"
+                text = "${exercise.sets}x${exercise.reps} reps (${exercise.estimatedMinutes} min)"
             )
         }
 
@@ -282,29 +254,6 @@ private fun ExerciseListItem(
     }
 }
 
-private fun sampleWorkout(
-    id: String,
-    name: String,
-    startTime: LocalDateTime
-): TraineeWorkout {
-    return TraineeWorkout(
-        id = id,
-        trainerId = "trainer-1",
-        traineeId = "demo-trainee",
-        name = name,
-        startTime = startTime,
-        endTime = startTime.plusMinutes(60),
-        exercises = listOf(
-            TraineeExercise("1", "Exercise 1", "Core", "4x10", 10),
-            TraineeExercise("2", "Exercise 2", "Legs", "3x12", 8),
-            TraineeExercise("3", "Exercise 3", "Chest", "4x8", 10),
-            TraineeExercise("4", "Exercise 4", "Back", "3x10", 12),
-            TraineeExercise("5", "Exercise 5", "Core", "4x10", 10),
-            TraineeExercise("6", "Exercise 6", "Shoulders", "3x10", 10)
-        )
-    )
-}
-
-private fun estimatedWorkoutMinutes(workout: TraineeWorkout): Int {
+private fun estimatedWorkoutMinutes(workout: Workout): Int {
     return workout.exercises.sumOf { it.estimatedMinutes }
 }
