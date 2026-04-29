@@ -23,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,29 +34,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.personaltrainerapp.data.calendar.AvailabilityStatus
 import com.example.personaltrainerapp.ui.common.AppHeader
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
-enum class Availability {
-    IDEAL,
-    MAYBE,
-    BUSY
-}
-
 @Composable
-fun CalendarScreen() {
+fun CalendarScreen(
+    traineeId: String = "demo-trainee"
+) {
+    val viewModel = viewModel<CalendarViewModel>()
+    val uiState by viewModel.uiState.collectAsState()
+
     val today = LocalDate.now()
     val firstWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     val maxDate = today.plusMonths(6)
 
     var currentWeekStart by remember { mutableStateOf(firstWeekStart) }
-
-    var availability by remember {
-        mutableStateOf<Map<String, Availability>>(emptyMap())
-    }
 
     val weekDates = (0..6).map { currentWeekStart.plusDays(it.toLong()) }
     val weekEnd = weekDates.last()
@@ -62,8 +61,15 @@ fun CalendarScreen() {
     val canGoBack = currentWeekStart.isAfter(firstWeekStart)
     val canGoForward = weekEnd.isBefore(maxDate)
 
-    // Wider availability window; grid scrolls vertically.
     val hours = (6..21)
+
+    LaunchedEffect(traineeId, currentWeekStart) {
+        viewModel.loadAvailability(
+            traineeId = traineeId,
+            startDate = weekDates.first(),
+            endDate = weekDates.last()
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -129,6 +135,11 @@ fun CalendarScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        if (uiState.error != null) {
+            Text(uiState.error!!)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -148,7 +159,8 @@ fun CalendarScreen() {
 
                     weekDates.forEach { date ->
                         val key = availabilityKey(date, hour)
-                        val currentAvailability = availability[key] ?: Availability.IDEAL
+                        val currentAvailability =
+                            uiState.slots[key] ?: AvailabilityStatus.IDEAL
 
                         Box(
                             modifier = Modifier
@@ -160,9 +172,11 @@ fun CalendarScreen() {
                                     shape = RoundedCornerShape(6.dp)
                                 )
                                 .clickable {
-                                    availability = availability.toMutableMap().also { updated ->
-                                        updated[key] = nextAvailability(currentAvailability)
-                                    }
+                                    viewModel.cycleAvailability(
+                                        traineeId = traineeId,
+                                        date = date,
+                                        hour = hour
+                                    )
                                 }
                         )
                     }
@@ -176,30 +190,18 @@ fun CalendarScreen() {
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(bottom = 4.dp)
         ) {
-            LegendItem("Ideal", colorFor(Availability.IDEAL))
-            LegendItem("Maybe", colorFor(Availability.MAYBE))
-            LegendItem("Busy", colorFor(Availability.BUSY))
+            LegendItem("Ideal", colorFor(AvailabilityStatus.IDEAL))
+            LegendItem("Maybe", colorFor(AvailabilityStatus.MAYBE))
+            LegendItem("Busy", colorFor(AvailabilityStatus.BUSY))
         }
     }
 }
 
-private fun availabilityKey(date: LocalDate, hour: Int): String {
-    return "${date}_${hour}"
-}
-
-private fun nextAvailability(current: Availability): Availability {
-    return when (current) {
-        Availability.IDEAL -> Availability.MAYBE
-        Availability.MAYBE -> Availability.BUSY
-        Availability.BUSY -> Availability.IDEAL
-    }
-}
-
-private fun colorFor(availability: Availability): Color {
-    return when (availability) {
-        Availability.IDEAL -> Color(0xFFA5D6A7)
-        Availability.MAYBE -> Color(0xFFFFF59D)
-        Availability.BUSY -> Color(0xFFEF9A9A)
+private fun colorFor(status: AvailabilityStatus): Color {
+    return when (status) {
+        AvailabilityStatus.IDEAL -> Color(0xFFA5D6A7)
+        AvailabilityStatus.MAYBE -> Color(0xFFFFF59D)
+        AvailabilityStatus.BUSY -> Color(0xFFEF9A9A)
     }
 }
 
