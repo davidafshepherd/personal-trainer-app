@@ -23,7 +23,7 @@ fun topLevelDestinationsFor(role: UserRole): List<TopLevelDestination> {
             TopLevelDestination("Home", Icons.Default.Home, TraineeHomeRoute),
             TopLevelDestination("Calendar", Icons.Default.CalendarMonth, TraineeCalendarRoute),
             TopLevelDestination("Workouts", Icons.Default.FitnessCenter, TraineeWorkoutsRoute),
-            TopLevelDestination("Trainer", Icons.Default.Person, TraineeTrainerRoute),
+            TopLevelDestination("Trainer", Icons.Default.Group, TraineeTrainerRoute),
             TopLevelDestination("Profile", Icons.Default.Person, TraineeProfileRoute)
         )
 
