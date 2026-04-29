@@ -14,6 +14,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.example.personaltrainerapp.data.UserProfile
 import com.example.personaltrainerapp.data.UserRole
 import com.example.personaltrainerapp.navigation.*
+import com.example.personaltrainerapp.ui.calendar.CalendarScreen
 import com.example.personaltrainerapp.ui.trainer.TrainerScreen
 import com.example.personaltrainerapp.ui.workouts.WorkoutsScreen
 
@@ -37,7 +38,7 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
 
     val entryProvider = entryProvider {
         entry<TraineeHomeRoute> { BlankScreen("Home") }
-        entry<TraineeCalendarRoute> { BlankScreen("Calendar") }
+        entry<TraineeCalendarRoute> { CalendarScreen() }
         entry<TraineeWorkoutsRoute> { WorkoutsScreen() }
         entry<TraineeTrainerRoute> { TrainerScreen() }
         entry<TraineeProfileRoute> { ProfileScreen(role = UserRole.TRAINEE) }
