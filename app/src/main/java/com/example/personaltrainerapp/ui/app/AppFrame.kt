@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.example.personaltrainerapp.data.UserProfile
-import com.example.personaltrainerapp.data.UserRole
+import com.example.personaltrainerapp.data.user.UserProfile
+import com.example.personaltrainerapp.data.user.UserRole
 import com.example.personaltrainerapp.navigation.*
 import com.example.personaltrainerapp.ui.calendar.CalendarScreen
 import com.example.personaltrainerapp.ui.trainer.TrainerScreen

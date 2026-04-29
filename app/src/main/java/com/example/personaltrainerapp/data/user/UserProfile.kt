@@ -1,4 +1,4 @@
-package com.example.personaltrainerapp.data
+package com.example.personaltrainerapp.data.user
 
 data class UserProfile(
     val uid: String = "",

@@ -6,8 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.personaltrainerapp.data.UserProfile
-import com.example.personaltrainerapp.data.UserRole
+import com.example.personaltrainerapp.data.user.UserProfile
+import com.example.personaltrainerapp.data.user.UserRole
 import com.example.personaltrainerapp.ui.app.AppFrame
 import com.example.personaltrainerapp.ui.theme.PersonalTrainerAppTheme
 

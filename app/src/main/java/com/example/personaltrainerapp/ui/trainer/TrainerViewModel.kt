@@ -2,8 +2,8 @@ package com.example.personaltrainerapp.ui.trainer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.personaltrainerapp.data.TrainerRepository
-import com.example.personaltrainerapp.data.UserProfile
+import com.example.personaltrainerapp.data.trainer.TrainerRepository
+import com.example.personaltrainerapp.data.user.UserProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch

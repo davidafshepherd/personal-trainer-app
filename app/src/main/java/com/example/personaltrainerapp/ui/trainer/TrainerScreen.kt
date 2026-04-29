@@ -39,8 +39,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.personaltrainerapp.data.TrainerTags
-import com.example.personaltrainerapp.data.UserProfile
+import com.example.personaltrainerapp.data.trainer.TrainerTags
+import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.ui.common.AppHeader
 
 @Composable

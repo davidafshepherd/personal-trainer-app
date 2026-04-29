@@ -1,4 +1,4 @@
-package com.example.personaltrainerapp.data
+package com.example.personaltrainerapp.data.trainer
 
 object TrainerTags {
     val all = listOf(

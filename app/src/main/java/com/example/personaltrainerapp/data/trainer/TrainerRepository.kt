@@ -1,5 +1,6 @@
-package com.example.personaltrainerapp.data
+package com.example.personaltrainerapp.data.trainer
 
+import com.example.personaltrainerapp.data.user.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
