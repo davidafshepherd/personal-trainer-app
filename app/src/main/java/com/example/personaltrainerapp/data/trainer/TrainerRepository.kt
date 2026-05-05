@@ -95,4 +95,23 @@ class TrainerRepository {
             Log.e("TrainerRepository", "Failed to unenrol from trainer", e)
         }
     }
+
+    suspend fun hasPendingTrainerRequest(
+        traineeId: String,
+        trainerId: String
+    ): Boolean {
+        return try {
+            val requestId = "${traineeId}_$trainerId"
+
+            val doc = db.collection("trainerRequests")
+                .document(requestId)
+                .get()
+                .await()
+
+            doc.exists() && doc.getString("status") == "PENDING"
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to check trainer request", e)
+            false
+        }
+    }
 }
