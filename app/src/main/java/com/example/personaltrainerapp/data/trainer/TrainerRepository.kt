@@ -3,6 +3,7 @@ package com.example.personaltrainerapp.data.trainer
 import android.util.Log
 import com.example.personaltrainerapp.data.user.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
 class TrainerRepository {
@@ -58,6 +59,40 @@ class TrainerRepository {
                 .await()
         } catch (e: Exception) {
             Log.e("TrainerRepository", "Failed to request trainer", e)
+        }
+    }
+
+    suspend fun getAssignedTrainer(traineeId: String): UserProfile? {
+        return try {
+            val traineeDoc = db.collection("users")
+                .document(traineeId)
+                .get()
+                .await()
+
+            val trainerId = traineeDoc.getString("trainerId")
+
+            if (trainerId.isNullOrBlank()) {
+                null
+            } else {
+                getTrainerById(trainerId)
+            }
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to load assigned trainer", e)
+            null
+        }
+    }
+
+    suspend fun unenrolFromTrainer(traineeId: String) {
+        try {
+            db.collection("users")
+                .document(traineeId)
+                .set(
+                    mapOf("trainerId" to null),
+                    SetOptions.merge()
+                )
+                .await()
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to unenrol from trainer", e)
         }
     }
 }
