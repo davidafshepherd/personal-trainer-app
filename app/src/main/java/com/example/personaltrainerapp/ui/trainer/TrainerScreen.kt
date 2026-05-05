@@ -51,6 +51,7 @@ fun TrainerScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var isSearching by remember { mutableStateOf(false) }
+    var viewedTrainer by remember { mutableStateOf<UserProfile?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadTrainers()
@@ -62,6 +63,25 @@ fun TrainerScreen(
                 trainer = uiState.selectedTrainer!!,
                 onBack = {
                     isSearching = true
+                    viewedTrainer = null
+                },
+                showChooseButton = false,
+                onChooseTrainer = {}
+            )
+        }
+
+        viewedTrainer != null -> {
+            TrainerProfileScreen(
+                trainer = viewedTrainer!!,
+                onBack = { viewedTrainer = null },
+                showChooseButton = true,
+                onChooseTrainer = {
+                    viewModel.selectTrainer(
+                        traineeId = traineeId,
+                        trainer = viewedTrainer!!
+                    )
+                    viewedTrainer = null
+                    isSearching = false
                 }
             )
         }
@@ -72,11 +92,7 @@ fun TrainerScreen(
                 isLoading = uiState.isLoading,
                 onBack = { isSearching = false },
                 onTrainerSelected = { trainer ->
-                    viewModel.selectTrainer(
-                        traineeId = traineeId,
-                        trainer = trainer
-                    )
-                    isSearching = false
+                    viewedTrainer = trainer
                 }
             )
         }
@@ -205,13 +221,8 @@ private fun TrainerSearchScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         when {
-            isLoading -> {
-                Text("Loading trainers...")
-            }
-
-            filteredTrainers.isEmpty() -> {
-                Text("No trainers found")
-            }
+            isLoading -> Text("Loading trainers...")
+            filteredTrainers.isEmpty() -> Text("No trainers found")
 
             else -> {
                 LazyColumn(
@@ -274,7 +285,9 @@ private fun TrainerListItem(
 @Composable
 private fun TrainerProfileScreen(
     trainer: UserProfile,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    showChooseButton: Boolean,
+    onChooseTrainer: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -338,6 +351,17 @@ private fun TrainerProfileScreen(
                         label = { Text(tag) }
                     )
                 }
+            }
+        }
+
+        if (showChooseButton) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onChooseTrainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Choose Trainer")
             }
         }
     }
