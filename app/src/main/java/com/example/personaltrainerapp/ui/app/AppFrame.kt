@@ -41,9 +41,9 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
 
     val entryProvider = entryProvider {
         entry<TraineeHomeRoute> { BlankScreen("Home") }
-        entry<TraineeCalendarRoute> { CalendarScreen() }
-        entry<TraineeWorkoutsRoute> { WorkoutsScreen() }
-        entry<TraineeTrainerRoute> { TrainerScreen() }
+        entry<TraineeCalendarRoute> { CalendarScreen(traineeId = user.uid) }
+        entry<TraineeWorkoutsRoute> { WorkoutsScreen(traineeId = user.uid) }
+        entry<TraineeTrainerRoute> { TrainerScreen(traineeId = user.uid) }
         entry<TraineeProfileRoute> { ProfileScreen(role = UserRole.TRAINEE) }
 
         entry<TrainerHomeRoute> { BlankScreen("Home") }
