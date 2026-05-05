@@ -1,7 +1,9 @@
 package com.example.personaltrainerapp.data.trainer
 
+import android.util.Log
 import com.example.personaltrainerapp.data.user.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
 class TrainerRepository {
@@ -36,13 +38,80 @@ class TrainerRepository {
         }
     }
 
-    suspend fun selectTrainer(
+    suspend fun requestTrainer(
         traineeId: String,
         trainerId: String
     ) {
-        db.collection("users")
-            .document(traineeId)
-            .update("trainerId", trainerId)
-            .await()
+        try {
+            val requestId = "${traineeId}_$trainerId"
+
+            db.collection("trainerRequests")
+                .document(requestId)
+                .set(
+                    TrainerRequest(
+                        id = requestId,
+                        traineeId = traineeId,
+                        trainerId = trainerId,
+                        status = "PENDING",
+                        createdAt = System.currentTimeMillis()
+                    )
+                )
+                .await()
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to request trainer", e)
+        }
+    }
+
+    suspend fun getAssignedTrainer(traineeId: String): UserProfile? {
+        return try {
+            val traineeDoc = db.collection("users")
+                .document(traineeId)
+                .get()
+                .await()
+
+            val trainerId = traineeDoc.getString("trainerId")
+
+            if (trainerId.isNullOrBlank()) {
+                null
+            } else {
+                getTrainerById(trainerId)
+            }
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to load assigned trainer", e)
+            null
+        }
+    }
+
+    suspend fun unenrolFromTrainer(traineeId: String) {
+        try {
+            db.collection("users")
+                .document(traineeId)
+                .set(
+                    mapOf("trainerId" to null),
+                    SetOptions.merge()
+                )
+                .await()
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to unenrol from trainer", e)
+        }
+    }
+
+    suspend fun hasPendingTrainerRequest(
+        traineeId: String,
+        trainerId: String
+    ): Boolean {
+        return try {
+            val requestId = "${traineeId}_$trainerId"
+
+            val doc = db.collection("trainerRequests")
+                .document(requestId)
+                .get()
+                .await()
+
+            doc.exists() && doc.getString("status") == "PENDING"
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to check trainer request", e)
+            false
+        }
     }
 }
