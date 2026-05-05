@@ -17,6 +17,9 @@ import com.example.personaltrainerapp.navigation.*
 import com.example.personaltrainerapp.ui.calendar.CalendarScreen
 import com.example.personaltrainerapp.ui.trainer.TrainerScreen
 import com.example.personaltrainerapp.ui.workouts.WorkoutsScreen
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.togetherWith
 
 @Composable
 fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
@@ -74,7 +77,16 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
         ) {
             NavDisplay(
                 entries = navState.toDecoratedEntries(entryProvider),
-                onBack = { navigator.goBack() }
+                onBack = { navigator.goBack() },
+                transitionSpec = {
+                    EnterTransition.None togetherWith ExitTransition.None
+                },
+                popTransitionSpec = {
+                    EnterTransition.None togetherWith ExitTransition.None
+                },
+                predictivePopTransitionSpec = {
+                    EnterTransition.None togetherWith ExitTransition.None
+                }
             )
         }
     }
