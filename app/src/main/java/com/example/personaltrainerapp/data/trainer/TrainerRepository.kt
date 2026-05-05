@@ -40,9 +40,16 @@ class TrainerRepository {
         traineeId: String,
         trainerId: String
     ) {
-        db.collection("users")
-            .document(traineeId)
-            .update("trainerId", trainerId)
-            .await()
+        try {
+            db.collection("users")
+                .document(traineeId)
+                .set(
+                    mapOf("trainerId" to trainerId),
+                    com.google.firebase.firestore.SetOptions.merge()
+                )
+                .await()
+        } catch (e: Exception) {
+            android.util.Log.e("TrainerRepository", "Failed to select trainer", e)
+        }
     }
 }
