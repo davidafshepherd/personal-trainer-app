@@ -53,8 +53,9 @@ fun TrainerScreen(
     var isSearching by remember { mutableStateOf(false) }
     var viewedTrainer by remember { mutableStateOf<UserProfile?>(null) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(traineeId) {
         viewModel.loadTrainers()
+        viewModel.loadAssignedTrainer(traineeId)
     }
 
     when {
@@ -62,11 +63,15 @@ fun TrainerScreen(
             TrainerProfileScreen(
                 trainer = uiState.selectedTrainer!!,
                 onBack = {
-                    isSearching = true
+                    isSearching = false
                     viewedTrainer = null
                 },
-                showChooseButton = false,
-                onChooseTrainer = {}
+                showRequestButton = false,
+                showUnenrolButton = true,
+                onRequestTrainer = {},
+                onUnenrolTrainer = {
+                    viewModel.unenrolFromTrainer(traineeId)
+                },
             )
         }
 
@@ -74,15 +79,17 @@ fun TrainerScreen(
             TrainerProfileScreen(
                 trainer = viewedTrainer!!,
                 onBack = { viewedTrainer = null },
-                showChooseButton = true,
-                onChooseTrainer = {
+                showRequestButton = true,
+                showUnenrolButton = false,
+                onRequestTrainer = {
                     viewModel.requestTrainer(
                         traineeId = traineeId,
                         trainer = viewedTrainer!!
                     )
                     viewedTrainer = null
                     isSearching = false
-                }
+                },
+                onUnenrolTrainer = {}
             )
         }
 
@@ -286,8 +293,10 @@ private fun TrainerListItem(
 private fun TrainerProfileScreen(
     trainer: UserProfile,
     onBack: () -> Unit,
-    showChooseButton: Boolean,
-    onChooseTrainer: () -> Unit
+    showRequestButton: Boolean,
+    showUnenrolButton: Boolean,
+    onRequestTrainer: () -> Unit,
+    onUnenrolTrainer: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -354,14 +363,25 @@ private fun TrainerProfileScreen(
             }
         }
 
-        if (showChooseButton) {
+        if (showRequestButton) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = onChooseTrainer,
+                onClick = onRequestTrainer,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Request Trainer")
+            }
+        }
+
+        if (showUnenrolButton) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onUnenrolTrainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Unenrol")
             }
         }
     }
