@@ -37,4 +37,24 @@ class TrainerViewModel(
             repository.requestTrainer(traineeId, trainer.uid)
         }
     }
+
+    fun loadAssignedTrainer(traineeId: String) {
+        viewModelScope.launch {
+            val trainer = repository.getAssignedTrainer(traineeId)
+
+            _uiState.value = _uiState.value.copy(
+                selectedTrainer = trainer
+            )
+        }
+    }
+
+    fun unenrolFromTrainer(traineeId: String) {
+        viewModelScope.launch {
+            repository.unenrolFromTrainer(traineeId)
+
+            _uiState.value = _uiState.value.copy(
+                selectedTrainer = null
+            )
+        }
+    }
 }
