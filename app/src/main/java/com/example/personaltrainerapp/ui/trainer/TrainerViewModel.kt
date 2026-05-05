@@ -32,13 +32,9 @@ class TrainerViewModel(
         }
     }
 
-    fun selectTrainer(traineeId: String, trainer: UserProfile) {
+    fun requestTrainer(traineeId: String, trainer: UserProfile) {
         viewModelScope.launch {
-            repository.selectTrainer(traineeId, trainer.uid)
-
-            _uiState.value = _uiState.value.copy(
-                selectedTrainer = trainer
-            )
+            repository.requestTrainer(traineeId, trainer.uid)
         }
     }
 }
