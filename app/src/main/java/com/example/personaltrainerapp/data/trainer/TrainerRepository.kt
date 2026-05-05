@@ -1,5 +1,6 @@
 package com.example.personaltrainerapp.data.trainer
 
+import android.util.Log
 import com.example.personaltrainerapp.data.user.UserProfile
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -36,20 +37,27 @@ class TrainerRepository {
         }
     }
 
-    suspend fun selectTrainer(
+    suspend fun requestTrainer(
         traineeId: String,
         trainerId: String
     ) {
         try {
-            db.collection("users")
-                .document(traineeId)
+            val requestId = "${traineeId}_$trainerId"
+
+            db.collection("trainerRequests")
+                .document(requestId)
                 .set(
-                    mapOf("trainerId" to trainerId),
-                    com.google.firebase.firestore.SetOptions.merge()
+                    TrainerRequest(
+                        id = requestId,
+                        traineeId = traineeId,
+                        trainerId = trainerId,
+                        status = "PENDING",
+                        createdAt = System.currentTimeMillis()
+                    )
                 )
                 .await()
         } catch (e: Exception) {
-            android.util.Log.e("TrainerRepository", "Failed to select trainer", e)
+            Log.e("TrainerRepository", "Failed to request trainer", e)
         }
     }
 }
