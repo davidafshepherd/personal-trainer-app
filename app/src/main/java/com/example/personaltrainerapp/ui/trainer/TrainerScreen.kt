@@ -76,7 +76,7 @@ fun TrainerScreen(
                 onBack = { viewedTrainer = null },
                 showChooseButton = true,
                 onChooseTrainer = {
-                    viewModel.selectTrainer(
+                    viewModel.requestTrainer(
                         traineeId = traineeId,
                         trainer = viewedTrainer!!
                     )
@@ -361,7 +361,7 @@ private fun TrainerProfileScreen(
                 onClick = onChooseTrainer,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Choose Trainer")
+                Text("Request Trainer")
             }
         }
     }
