@@ -76,11 +76,23 @@ fun TrainerScreen(
         }
 
         viewedTrainer != null -> {
+            LaunchedEffect(viewedTrainer!!.uid) {
+                viewModel.checkPendingRequest(
+                    traineeId = traineeId,
+                    trainerId = viewedTrainer!!.uid
+                )
+            }
+
+            val alreadyRequested =
+                viewedTrainer!!.uid in uiState.pendingRequestedTrainerIds
+
             TrainerProfileScreen(
                 trainer = viewedTrainer!!,
                 onBack = { viewedTrainer = null },
                 showRequestButton = true,
                 showUnenrolButton = false,
+                requestButtonEnabled = !alreadyRequested,
+                requestButtonText = if (alreadyRequested) "Already requested" else "Request Trainer",
                 onRequestTrainer = {
                     viewModel.requestTrainer(
                         traineeId = traineeId,
@@ -296,7 +308,9 @@ private fun TrainerProfileScreen(
     showRequestButton: Boolean,
     showUnenrolButton: Boolean,
     onRequestTrainer: () -> Unit,
-    onUnenrolTrainer: () -> Unit
+    onUnenrolTrainer: () -> Unit,
+    requestButtonEnabled: Boolean = true,
+    requestButtonText: String = "Request Trainer"
 ) {
     Column(
         modifier = Modifier
@@ -368,9 +382,10 @@ private fun TrainerProfileScreen(
 
             Button(
                 onClick = onRequestTrainer,
+                enabled = requestButtonEnabled,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Request Trainer")
+                Text(requestButtonText)
             }
         }
 
