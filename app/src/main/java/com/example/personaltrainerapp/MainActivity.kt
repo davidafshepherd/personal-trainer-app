@@ -23,13 +23,24 @@ val user = UserProfile(
     profileImageUrl = "",
 )
 
+val user1 = UserProfile(
+    uid = "demo-user",
+    email = "johndoe@gmail.com",
+    displayName = "John Doe",
+    bio = "Sup",
+    phoneNumber = "07518 542109",
+    role = UserRole.TRAINER,
+    tags = listOf("cardio", "strength", "endurance"),
+    profileImageUrl = "",
+)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             PersonalTrainerAppTheme {
-                AppFrame(user)
+                AppFrame(user1)
             }
         }
     }
@@ -39,6 +50,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun GreetingPreview() {
     PersonalTrainerAppTheme {
-        AppFrame(user)
+        AppFrame(user1)
     }
 }

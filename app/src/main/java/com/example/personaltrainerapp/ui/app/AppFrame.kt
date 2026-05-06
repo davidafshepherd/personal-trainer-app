@@ -15,6 +15,8 @@ import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.data.user.UserRole
 import com.example.personaltrainerapp.navigation.*
 import com.example.personaltrainerapp.ui.calendar.CalendarScreen
+import com.example.personaltrainerapp.ui.library.LibraryScreen
+import com.example.personaltrainerapp.ui.trainees.TraineesScreen
 import com.example.personaltrainerapp.ui.trainer.TrainerScreen
 import com.example.personaltrainerapp.ui.workouts.WorkoutsScreen
 
@@ -44,8 +46,8 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
         entry<TraineeProfileRoute> { ProfileScreen(role = UserRole.TRAINEE) }
 
         entry<TrainerHomeRoute> { BlankScreen("Home") }
-        entry<TrainerTraineesRoute> { BlankScreen("Trainees") }
-        entry<TrainerLibraryRoute> { BlankScreen("Library") }
+        entry<TrainerTraineesRoute> { TraineesScreen() }
+        entry<TrainerLibraryRoute> { LibraryScreen() }
         entry<TrainerProfileRoute> { ProfileScreen(role = UserRole.TRAINER) }
     }
 
