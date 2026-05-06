@@ -6,22 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.personaltrainerapp.data.user.UserProfile
-import com.example.personaltrainerapp.data.user.UserRole
-import com.example.personaltrainerapp.ui.app.AppFrame
+import com.example.personaltrainerapp.ui.RootScreen
 import com.example.personaltrainerapp.ui.theme.PersonalTrainerAppTheme
-
-
-val user = UserProfile(
-    uid = "01",
-    email = "johndoe@gmail.com",
-    displayName = "John Doe",
-    bio = "Sup",
-    phoneNumber = "07518 542109",
-    role = UserRole.TRAINEE,
-    tags = listOf("cardio", "strength", "endurance"),
-    profileImageUrl = "",
-)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +15,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PersonalTrainerAppTheme {
-                AppFrame(user)
+                RootScreen()
             }
         }
     }
@@ -39,6 +25,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun GreetingPreview() {
     PersonalTrainerAppTheme {
-        AppFrame(user)
+        RootScreen()
     }
 }

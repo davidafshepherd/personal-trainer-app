@@ -15,40 +15,50 @@ import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.data.user.UserRole
 import com.example.personaltrainerapp.navigation.*
 import com.example.personaltrainerapp.ui.calendar.CalendarScreen
+import com.example.personaltrainerapp.ui.profile.ProfileScreen
 import com.example.personaltrainerapp.ui.trainer.TrainerScreen
 import com.example.personaltrainerapp.ui.workouts.WorkoutsScreen
 
+/**
+ * Root scaffold for signed-in users.
+ */
 @Composable
 fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
+    // Destinations are role-specific:
+    //     trainees see Home/Calendar/Workouts/Trainer/Profile
+    //     trainers see Home/Trainees/Library/Profile
     val destinations = topLevelDestinationsFor(user.role)
 
+    // Each role starts on its own home screen
     val startRoute = when (user.role) {
         UserRole.TRAINEE -> TraineeHomeRoute
         UserRole.TRAINER -> TrainerHomeRoute
     }
 
+    // Tracks the current back stack
     val navState = rememberNavigationState(
         startRoute = startRoute,
         topLevelRoutes = destinations.map { it.route }.toSet()
     )
 
-    val navigator = remember(navState) {
-        Navigator(navState)
-    }
+    // Wraps navState so screens can trigger navigation without holding a ref to the state holder
+    val navigator = remember(navState) { Navigator(navState) }
 
+    // Maps each route to its screen composable
     val entryProvider = entryProvider {
         entry<TraineeHomeRoute> { BlankScreen("Home") }
         entry<TraineeCalendarRoute> { CalendarScreen() }
         entry<TraineeWorkoutsRoute> { WorkoutsScreen() }
         entry<TraineeTrainerRoute> { TrainerScreen() }
-        entry<TraineeProfileRoute> { ProfileScreen(role = UserRole.TRAINEE) }
+        entry<TraineeProfileRoute> { ProfileScreen(user = user) }
 
         entry<TrainerHomeRoute> { BlankScreen("Home") }
         entry<TrainerTraineesRoute> { BlankScreen("Trainees") }
         entry<TrainerLibraryRoute> { BlankScreen("Library") }
-        entry<TrainerProfileRoute> { ProfileScreen(role = UserRole.TRAINER) }
+        entry<TrainerProfileRoute> { ProfileScreen(user = user) }
     }
 
+    // Automatically switches between bottom bar, rail and drawer depending on window size class
     NavigationSuiteScaffold(
         modifier = modifier.fillMaxSize(),
         navigationSuiteItems = {

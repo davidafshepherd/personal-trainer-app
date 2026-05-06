@@ -1,6 +1,7 @@
 package com.example.personaltrainerapp.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Group
@@ -30,7 +31,7 @@ fun topLevelDestinationsFor(role: UserRole): List<TopLevelDestination> {
         UserRole.TRAINER -> listOf(
             TopLevelDestination("Home", Icons.Default.Home, TrainerHomeRoute),
             TopLevelDestination("Trainees", Icons.Default.Group, TrainerTraineesRoute),
-            TopLevelDestination("Library", Icons.Default.LibraryBooks, TrainerLibraryRoute),
+            TopLevelDestination("Library", Icons.AutoMirrored.Filled.LibraryBooks, TrainerLibraryRoute),
             TopLevelDestination("Profile", Icons.Default.Person, TrainerProfileRoute)
         )
     }
