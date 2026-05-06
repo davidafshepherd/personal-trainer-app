@@ -44,6 +44,18 @@ class WorkoutsViewModel(
         }
     }
 
+    fun loadAllWorkouts(){
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            val workouts = repository.getAllWorkouts()
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                workouts = workouts,
+                error = null
+            )
+        }
+    }
+
     fun selectWorkout(workout: Workout) {
         _uiState.value = _uiState.value.copy(
             selectedWorkout = workout

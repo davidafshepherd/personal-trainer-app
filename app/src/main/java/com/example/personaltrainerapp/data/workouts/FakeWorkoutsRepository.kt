@@ -13,6 +13,14 @@ class FakeWorkoutsRepository : WorkoutsRepository {
         sampleWorkout("6", "Workout 6", LocalDateTime.of(2026, 5, 21, 12, 0))
     )
 
+    override suspend fun getAllWorkouts(): List<Workout>{
+        return workouts
+    }
+
+    override suspend fun getWorkoutById(workoutId:String): Workout?{
+        return workouts.find { (id, _, _, _, _, _, _) -> id == workoutId}
+    }
+
     override suspend fun getUpcomingWorkouts(
         traineeId: String
     ): List<Workout> {
@@ -56,12 +64,12 @@ class FakeWorkoutsRepository : WorkoutsRepository {
             startTime = startTime,
             endTime = startTime.plusMinutes(60),
             exercises = listOf(
-                Exercise("1", "Exercise 1", "Core", sets = 4, reps = 10, estimatedMinutes = 10),
-                Exercise("2", "Exercise 2", "Legs", sets = 3, reps = 12, estimatedMinutes = 8),
-                Exercise("3", "Exercise 3", "Chest", sets = 4, reps = 8, estimatedMinutes = 10),
-                Exercise("4", "Exercise 4", "Back", sets = 3, reps = 10, estimatedMinutes = 12),
-                Exercise("5", "Exercise 5", "Core", sets = 4, reps = 10, estimatedMinutes = 10),
-                Exercise("6", "Exercise 6", "Shoulders", sets = 3, reps = 10, estimatedMinutes = 10)
+                Exercise("1", "Exercise 1", description = "Placeholder Description of exercise", muscleGroup = "Core", sets = 4, reps = 10, estimatedMinutes = 10),
+                Exercise("2", "Exercise 2", description = "Placeholder Description of exercise", muscleGroup = "Legs", sets = 3, reps = 12, estimatedMinutes = 8),
+                Exercise("3", "Exercise 3", description = "Placeholder Description of exercise", muscleGroup = "Chest", sets = 4, reps = 8, estimatedMinutes = 10),
+                Exercise("4", "Exercise 4", description = "Placeholder Description of exercise", muscleGroup = "Back", sets = 3, reps = 10, estimatedMinutes = 12),
+                Exercise("5", "Exercise 5", description = "Placeholder Description of exercise", muscleGroup = "Core", sets = 4, reps = 10, estimatedMinutes = 10),
+                Exercise("6", "Exercise 6", description = "Placeholder Description of exercise", muscleGroup = "Shoulders", sets = 3, reps = 10, estimatedMinutes = 10)
             )
         )
     }

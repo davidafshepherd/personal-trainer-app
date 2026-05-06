@@ -10,4 +10,7 @@ interface WorkoutsRepository {
         exerciseId: String,
         isComplete: Boolean
     )
+
+    suspend fun getAllWorkouts(): List<Workout>
+    suspend fun getWorkoutById(workoutId: String): Workout?
 }

@@ -1,0 +1,446 @@
+package com.example.personaltrainerapp.ui.library
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.personaltrainerapp.data.workouts.Exercise
+import com.example.personaltrainerapp.data.workouts.Workout
+import com.example.personaltrainerapp.ui.common.AppHeader
+
+
+@Composable
+fun LibraryScreen() {
+    val startDestination = 0
+    val viewModel = viewModel<LibraryViewModel>()
+    val uiState by viewModel.uiState.collectAsState()
+    val navController = rememberNavController()
+
+
+    LaunchedEffect(uiState.workouts, uiState.exercises) {
+        viewModel.loadAll()
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+    ) {
+        AppHeader(title = "Library")
+
+        NavHost(navController, "Tabs") {
+            composable("Tabs") {
+                LibraryTabs(
+                    isLoading = uiState.isLoading,
+                    startDestination = startDestination,
+                    workouts = uiState.workouts,
+                    exercises = uiState.exercises,
+                    viewModel = viewModel,
+                    navController = navController
+                )
+            }
+            composable("New Exercise") {
+                NewExercise(navController = navController)
+            }
+            composable("New Workout") {
+                NewWorkout(navController = navController)
+            }
+            composable("Display Exercise") {
+
+                DisplayExercise(uiState.selectedExercise, uiState)
+            }
+            composable("Display Workout") {
+
+                DisplayWorkout(
+                    uiState.selectedWorkout,
+                    uiState,
+                    navController = navController
+                )
+            }
+        }
+
+    }
+}
+
+@Composable
+fun LibraryTabs(
+    isLoading: Boolean,
+    startDestination: Int,
+    workouts: List<Workout>,
+    exercises: List<Exercise>,
+    navController: NavController,
+    viewModel: LibraryViewModel
+) {
+    var selectedDestination by rememberSaveable { mutableIntStateOf(startDestination) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(vertical = 12.dp)
+    ) {
+        PrimaryTabRow(selectedTabIndex = selectedDestination) {
+            Tab(
+                selected = selectedDestination == 0,
+                onClick = {
+                    selectedDestination = 0
+                },
+                text = {
+                    Text(
+                        text = "Workouts",
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            )
+            Tab(
+                selected = selectedDestination == 1,
+                onClick = {
+                    selectedDestination = 1
+                },
+                text = {
+                    Text(
+                        text = "Exercises",
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            )
+        }
+        when (selectedDestination) {
+            0 -> {
+                WorkoutsLibrary(
+                    isLoading = isLoading,
+                    workouts = workouts,
+                    viewModel = viewModel,
+                    navController = navController
+                )
+            }
+
+            1 -> {
+                ExercisesLibrary(
+                    isLoading = isLoading,
+                    exercises = exercises,
+                    viewModel = viewModel,
+                    navController = navController
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun WorkoutsLibrary(
+    isLoading: Boolean,
+    workouts: List<Workout>,
+    viewModel: LibraryViewModel,
+    navController: NavController
+) {
+
+    when {
+        isLoading -> {
+            Text("Loading Workouts...")
+        }
+
+        else -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                ListItem(
+                    headlineContent = { Text("New Workout") },
+                    modifier = Modifier.clickable(onClick = {
+                        navController.navigate("New Workout")
+                    }),
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "New Workout"
+                        )
+                    }
+                )
+                HorizontalDivider(thickness = 2.dp)
+                Spacer(modifier = Modifier.size(12.dp))
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(workouts) { workout ->
+                        WorkoutListItem(
+                            workout = workout,
+                            onClick = {
+                                viewModel.selectWorkout(workout)
+                                navController.navigate("Display Workout")
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+
+@Composable
+fun NewWorkout(
+    navController: NavController
+) {
+    var exercises: List<Exercise> = emptyList()
+    Column() {
+        AppHeader(
+            title = "New Workout",
+            onBack = { navController.popBackStack() }
+        )
+        TextField(
+            state = TextFieldState(""),
+            label = { Text("Name") },
+        )
+        TextField(
+            state = TextFieldState(""),
+            label = { Text("Description") },
+        )
+        ListItem(
+            headlineContent = { Text("Add Exercise") },
+            modifier = Modifier.clickable(onClick = {
+                navController.navigate("New Workout")
+            }),
+            leadingContent = {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Workout"
+                )
+            }
+        )
+        HorizontalDivider(thickness = 2.dp)
+        ExerciseList(
+            exercises = exercises,
+            onClick = {(exercise)->
+                exercise
+            }
+        )
+    }
+}
+
+@Composable
+fun NewExercise(
+    navController: NavController
+) {
+
+}
+
+@Composable
+fun ExercisesLibrary(
+    isLoading: Boolean,
+    exercises: List<Exercise>,
+    viewModel: LibraryViewModel,
+    navController: NavController
+) {
+
+    when {
+        isLoading -> {
+            Text("Loading Exercises...")
+        }
+
+        else -> {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                ListItem(
+                    headlineContent = { Text("New Exercise") },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "New Exercise"
+                        )
+                    },
+                    modifier = Modifier.clickable(
+                        onClick = {
+                            navController.navigate("New Exercise")
+                        }
+                    )
+                )
+                HorizontalDivider(thickness = 2.dp)
+                Spacer(modifier = Modifier.size(12.dp))
+                ExerciseList(
+                    exercises = exercises,
+                    onClick = { (exercise) ->
+                        //viewModel.selectExercise(exercise)
+                        navController.navigate("Display Exercise")
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseList(
+    exercises: List<Exercise>,
+    onClick: (Exercise) -> Unit
+) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(exercises) { exercise ->
+            ExerciseListItem(
+                exercise = exercise,
+                onClick = { onClick(exercise) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun WorkoutListItem(
+    workout: Workout,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = workout.name,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Default.FitnessCenter,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        supportingContent = {
+            Text(
+                workout.estimatedMinutes.toString() + " mins: "
+            )
+        },
+        modifier = Modifier.clickable(onClick = onClick)
+    )
+}
+
+@Composable
+private fun ExerciseListItem(
+    exercise: Exercise,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = exercise.name,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        leadingContent = {
+            Icon(
+                imageVector = Icons.Default.FitnessCenter,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        supportingContent = {
+            Text(
+                exercise.muscleGroup
+            )
+        },
+        modifier = Modifier.clickable(onClick = onClick)
+    )
+}
+
+
+@Composable
+fun DisplayWorkout(
+    workout: Workout?,
+    uiState: LibraryUiState,
+    navController: NavController
+) {
+
+    Column(
+        Modifier
+            .fillMaxSize()
+    ) {
+        AppHeader(title = workout!!.name, onBack = {
+            navController.popBackStack()
+        })
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(workout.description)
+        Spacer(modifier = Modifier.height(16.dp))
+        LazyColumn {
+            items(workout.exercises) { exercise ->
+                ListItem(
+                    headlineContent = { Text(exercise.name) },
+                    supportingContent = { Text(exercise.muscleGroup) },
+                    trailingContent = {
+                        Column {
+                            Text("Reps:")
+                            RepsInput(
+                                value = exercise.reps,
+                                onRepsChange = { change -> exercise.reps = change.toInt() })
+                        }
+                    }
+                )
+            }
+        }
+
+    }
+}
+
+@Composable
+fun RepsInput(
+    value: Int,
+    onRepsChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = value.toString(),
+        onValueChange = {
+            if (it.all { c -> c.isDigit() }) {
+                onRepsChange(it)
+            }
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Number
+        ),
+        modifier = Modifier.size(30.dp, 30.dp)
+    )
+}
+
+@Composable
+fun DisplayExercise(
+    exercise: Exercise?,
+    uiState: LibraryUiState
+
+) {
+
+}
+

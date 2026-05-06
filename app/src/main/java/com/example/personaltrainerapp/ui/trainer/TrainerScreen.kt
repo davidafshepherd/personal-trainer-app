@@ -51,9 +51,11 @@ fun TrainerScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var isSearching by remember { mutableStateOf(false) }
+    var viewedTrainer by remember { mutableStateOf<UserProfile?>(null) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(traineeId) {
         viewModel.loadTrainers()
+        viewModel.loadAssignedTrainer(traineeId)
     }
 
     when {
@@ -61,8 +63,45 @@ fun TrainerScreen(
             TrainerProfileScreen(
                 trainer = uiState.selectedTrainer!!,
                 onBack = {
-                    isSearching = true
-                }
+                    isSearching = false
+                    viewedTrainer = null
+                },
+                showRequestButton = false,
+                showUnenrolButton = true,
+                onRequestTrainer = {},
+                onUnenrolTrainer = {
+                    viewModel.unenrolFromTrainer(traineeId)
+                },
+            )
+        }
+
+        viewedTrainer != null -> {
+            LaunchedEffect(viewedTrainer!!.uid) {
+                viewModel.checkPendingRequest(
+                    traineeId = traineeId,
+                    trainerId = viewedTrainer!!.uid
+                )
+            }
+
+            val alreadyRequested =
+                viewedTrainer!!.uid in uiState.pendingRequestedTrainerIds
+
+            TrainerProfileScreen(
+                trainer = viewedTrainer!!,
+                onBack = { viewedTrainer = null },
+                showRequestButton = true,
+                showUnenrolButton = false,
+                requestButtonEnabled = !alreadyRequested,
+                requestButtonText = if (alreadyRequested) "Already requested" else "Request Trainer",
+                onRequestTrainer = {
+                    viewModel.requestTrainer(
+                        traineeId = traineeId,
+                        trainer = viewedTrainer!!
+                    )
+                    viewedTrainer = null
+                    isSearching = false
+                },
+                onUnenrolTrainer = {}
             )
         }
 
@@ -72,11 +111,7 @@ fun TrainerScreen(
                 isLoading = uiState.isLoading,
                 onBack = { isSearching = false },
                 onTrainerSelected = { trainer ->
-                    viewModel.selectTrainer(
-                        traineeId = traineeId,
-                        trainer = trainer
-                    )
-                    isSearching = false
+                    viewedTrainer = trainer
                 }
             )
         }
@@ -205,13 +240,8 @@ private fun TrainerSearchScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         when {
-            isLoading -> {
-                Text("Loading trainers...")
-            }
-
-            filteredTrainers.isEmpty() -> {
-                Text("No trainers found")
-            }
+            isLoading -> Text("Loading trainers...")
+            filteredTrainers.isEmpty() -> Text("No trainers found")
 
             else -> {
                 LazyColumn(
@@ -274,7 +304,13 @@ private fun TrainerListItem(
 @Composable
 private fun TrainerProfileScreen(
     trainer: UserProfile,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    showRequestButton: Boolean,
+    showUnenrolButton: Boolean,
+    onRequestTrainer: () -> Unit,
+    onUnenrolTrainer: () -> Unit,
+    requestButtonEnabled: Boolean = true,
+    requestButtonText: String = "Request Trainer"
 ) {
     Column(
         modifier = Modifier
@@ -338,6 +374,29 @@ private fun TrainerProfileScreen(
                         label = { Text(tag) }
                     )
                 }
+            }
+        }
+
+        if (showRequestButton) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onRequestTrainer,
+                enabled = requestButtonEnabled,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(requestButtonText)
+            }
+        }
+
+        if (showUnenrolButton) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onUnenrolTrainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Unenrol")
             }
         }
     }

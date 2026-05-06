@@ -11,7 +11,8 @@ import kotlinx.coroutines.launch
 data class TrainerUiState(
     val isLoading: Boolean = true,
     val trainers: List<UserProfile> = emptyList(),
-    val selectedTrainer: UserProfile? = null
+    val selectedTrainer: UserProfile? = null,
+    val pendingRequestedTrainerIds: Set<String> = emptySet()
 )
 
 class TrainerViewModel(
@@ -32,13 +33,53 @@ class TrainerViewModel(
         }
     }
 
-    fun selectTrainer(traineeId: String, trainer: UserProfile) {
+    fun requestTrainer(traineeId: String, trainer: UserProfile) {
         viewModelScope.launch {
-            repository.selectTrainer(traineeId, trainer.uid)
+            repository.requestTrainer(traineeId, trainer.uid)
+
+            _uiState.value = _uiState.value.copy(
+                pendingRequestedTrainerIds =
+                    _uiState.value.pendingRequestedTrainerIds + trainer.uid
+            )
+        }
+    }
+
+    fun loadAssignedTrainer(traineeId: String) {
+        viewModelScope.launch {
+            val trainer = repository.getAssignedTrainer(traineeId)
 
             _uiState.value = _uiState.value.copy(
                 selectedTrainer = trainer
             )
+        }
+    }
+
+    fun unenrolFromTrainer(traineeId: String) {
+        viewModelScope.launch {
+            repository.unenrolFromTrainer(traineeId)
+
+            _uiState.value = _uiState.value.copy(
+                selectedTrainer = null
+            )
+        }
+    }
+
+    fun checkPendingRequest(
+        traineeId: String,
+        trainerId: String
+    ) {
+        viewModelScope.launch {
+            val hasPendingRequest = repository.hasPendingTrainerRequest(
+                traineeId = traineeId,
+                trainerId = trainerId
+            )
+
+            if (hasPendingRequest) {
+                _uiState.value = _uiState.value.copy(
+                    pendingRequestedTrainerIds =
+                        _uiState.value.pendingRequestedTrainerIds + trainerId
+                )
+            }
         }
     }
 }
