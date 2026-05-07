@@ -3,20 +3,29 @@ package com.example.personaltrainerapp.ui.library
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
@@ -28,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,6 +52,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.personaltrainerapp.data.exercises.MuscleGroups
 import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.common.AppHeader
@@ -77,10 +88,17 @@ fun LibraryScreen() {
                 )
             }
             composable("New Exercise") {
-                NewExercise(navController = navController)
+                NewExercise(
+                    navController = navController,
+                    viewModel = viewModel
+                )
             }
             composable("New Workout") {
-                NewWorkout(navController = navController)
+                NewWorkout(
+                    navController = navController,
+                    viewModel = viewModel,
+                    uiState = uiState
+                )
             }
             composable("Display Exercise") {
 
@@ -196,13 +214,121 @@ fun WorkoutsLibrary(
                 )
                 HorizontalDivider(thickness = 2.dp)
                 Spacer(modifier = Modifier.size(12.dp))
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(workouts) { workout ->
-                        WorkoutListItem(
-                            workout = workout,
-                            onClick = {
-                                viewModel.selectWorkout(workout)
-                                navController.navigate("Display Workout")
+                WorkoutList(
+                    workouts = workouts,
+                    onClick = { workout ->
+                        viewModel.selectWorkout(workout)
+                        navController.navigate("Display Workout")
+                    })
+            }
+        }
+    }
+}
+
+
+@Composable
+fun NewWorkout(
+    navController: NavController,
+    viewModel: LibraryViewModel,
+    uiState: LibraryUiState
+) {
+    val exercises = remember { mutableStateListOf<Exercise>() }
+    var addingExercise by remember { mutableStateOf(false) }
+
+    val nameState = rememberTextFieldState()
+    val descState = rememberTextFieldState()
+
+    when (addingExercise) {
+        true -> {
+            Column() {
+                AppHeader(
+                    title = "Add Exercise",
+                    onBack = { addingExercise = false }
+                )
+                LazyColumn() {
+                    items(uiState.exercises) {
+                        ListItem(
+                            headlineContent = { Text(it.name) },
+                            supportingContent = { Text(it.muscleGroup) },
+                            modifier = Modifier.clickable(onClick = {
+                                exercises += it
+                                addingExercise = false
+                            })
+                        )
+                    }
+                }
+            }
+        }
+
+
+        false -> {
+            Column() {
+                AppHeader(
+                    title = "New Workout",
+                    onBack = { navController.popBackStack() },
+                    trailingContent = {
+                        IconButton(onClick = {
+                            val newWorkout = Workout()
+                            viewModel.saveWorkout(newWorkout)
+                            navController.popBackStack()
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Save,
+                                contentDescription = "Save Exercise"
+                            )
+                        }
+
+                    }
+                )
+                TextField(
+                    state = nameState,
+                    label = { Text("Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                TextField(
+                    state = descState,
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                ListItem(
+                    headlineContent = { Text("Add Exercise") },
+                    modifier = Modifier.clickable(onClick = { addingExercise = true }),
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Exercise"
+                        )
+
+                    }
+                )
+                HorizontalDivider(thickness = 2.dp)
+                LazyColumn {
+                    items(exercises) {
+                        ListItem(
+                            headlineContent = { Text(it.name) },
+                            supportingContent = { Text(it.muscleGroup) },
+                            trailingContent = {
+                                Row {
+                                    Text("Reps: ")
+                                    RepsInput(
+                                        value = it.reps,
+                                        onRepsChange = { r ->
+                                            it.reps = r.toInt()
+                                        }
+                                    )
+                                }
+                            },
+                            leadingContent = {
+                                IconButton(
+                                    onClick = {
+                                        exercises -= it
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Remove,
+                                        contentDescription = "Remove Exercise"
+                                    )
+                                }
                             }
                         )
                     }
@@ -213,52 +339,69 @@ fun WorkoutsLibrary(
 
 }
 
-
 @Composable
-fun NewWorkout(
-    navController: NavController
+fun NewExercise(
+    navController: NavController,
+    viewModel: LibraryViewModel
 ) {
-    var exercises: List<Exercise> = emptyList()
+
+    var name by remember { mutableStateOf("") }
+    var desc by remember { mutableStateOf("") }
+    var time by remember { mutableIntStateOf(0) }
+    var tag by remember { mutableStateOf("") }
     Column() {
         AppHeader(
-            title = "New Workout",
-            onBack = { navController.popBackStack() }
+            title = "New Exercise",
+            onBack = { navController.popBackStack() },
+            trailingContent = {
+                IconButton(onClick = {
+                    val newExercise = Exercise(
+                        name = name,
+                        description = desc,
+                        estimatedMinutes = time,
+                        muscleGroup = tag
+                    )
+                    viewModel.saveExercise(newExercise)
+                    navController.popBackStack()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Save,
+                        contentDescription = "Save Exercise"
+                    )
+                }
+
+            }
         )
         TextField(
             state = TextFieldState(""),
             label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth()
         )
         TextField(
             state = TextFieldState(""),
             label = { Text("Description") },
+            modifier = Modifier.fillMaxWidth()
         )
-        ListItem(
-            headlineContent = { Text("Add Exercise") },
-            modifier = Modifier.clickable(onClick = {
-                navController.navigate("New Workout")
-            }),
-            leadingContent = {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Workout"
+        TextField(
+            state = TextFieldState(""),
+            label = { Text("Minutes per Rep") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number
+            )
+        )
+        LazyRow() {
+            items(MuscleGroups.all) { type ->
+                FilterChip(
+                    selected = tag == type,
+                    label = { Text(type) },
+                    onClick = {
+                        tag = type
+                    }
                 )
             }
-        )
-        HorizontalDivider(thickness = 2.dp)
-        ExerciseList(
-            exercises = exercises,
-            onClick = {(exercise)->
-                exercise
-            }
-        )
+        }
     }
-}
-
-@Composable
-fun NewExercise(
-    navController: NavController
-) {
-
 }
 
 @Composable
@@ -307,7 +450,7 @@ fun ExercisesLibrary(
 }
 
 @Composable
-private fun ExerciseList(
+fun ExerciseList(
     exercises: List<Exercise>,
     onClick: (Exercise) -> Unit
 ) {
@@ -316,6 +459,22 @@ private fun ExerciseList(
             ExerciseListItem(
                 exercise = exercise,
                 onClick = { onClick(exercise) }
+            )
+        }
+    }
+}
+
+
+@Composable
+fun WorkoutList(
+    workouts: List<Workout>,
+    onClick: (Workout) -> Unit
+) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(workouts) { workout ->
+            WorkoutListItem(
+                workout = workout,
+                onClick = { onClick(workout) }
             )
         }
     }
@@ -350,7 +509,7 @@ private fun WorkoutListItem(
 }
 
 @Composable
-private fun ExerciseListItem(
+fun ExerciseListItem(
     exercise: Exercise,
     onClick: () -> Unit
 ) {
@@ -402,10 +561,8 @@ fun DisplayWorkout(
                     supportingContent = { Text(exercise.muscleGroup) },
                     trailingContent = {
                         Column {
-                            Text("Reps:")
-                            RepsInput(
-                                value = exercise.reps,
-                                onRepsChange = { change -> exercise.reps = change.toInt() })
+                            Text("Reps: " + exercise.reps)
+
                         }
                     }
                 )
@@ -421,7 +578,7 @@ fun RepsInput(
     onRepsChange: (String) -> Unit
 ) {
     OutlinedTextField(
-        value = value.toString(),
+        value = "10",//value.toString(),
         onValueChange = {
             if (it.all { c -> c.isDigit() }) {
                 onRepsChange(it)
@@ -431,7 +588,7 @@ fun RepsInput(
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number
         ),
-        modifier = Modifier.size(30.dp, 30.dp)
+        modifier = Modifier.size(50.dp, 50.dp)
     )
 }
 

@@ -1,11 +1,12 @@
 package com.example.personaltrainerapp.data.workouts
 
+import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import java.time.LocalDateTime
 
 class FakeWorkoutsRepository : WorkoutsRepository {
 
     private var workouts = listOf(
-        sampleWorkout("1", "Workout 1", LocalDateTime.of(2026, 5, 10, 14, 0)),
+        sampleWorkout("1", "Workout 1", LocalDateTime.of(2026, 5, 7, 2, 50)),
         sampleWorkout("2", "Workout 2", LocalDateTime.of(2026, 5, 11, 13, 0)),
         sampleWorkout("3", "Workout 3", LocalDateTime.of(2026, 5, 12, 13, 0)),
         sampleWorkout("4", "Workout 4", LocalDateTime.of(2026, 5, 14, 15, 0)),
@@ -51,6 +52,15 @@ class FakeWorkoutsRepository : WorkoutsRepository {
         }
     }
 
+
+    override suspend fun scheduleWorkout(
+        workout: Workout,
+        traineeId: String,
+        slot: AvailabilitySlot
+    ){
+
+    }
+
     private fun sampleWorkout(
         id: String,
         name: String,
@@ -58,13 +68,13 @@ class FakeWorkoutsRepository : WorkoutsRepository {
     ): Workout {
         return Workout(
             id = id,
-            trainerId = "trainer-1",
-            traineeId = "demo-trainee",
+            trainerId = "demo-user",
+            traineeId = "user",
             name = name,
             startTime = startTime,
-            endTime = startTime.plusMinutes(60),
+            endTime = startTime.plusMinutes(300),
             exercises = listOf(
-                Exercise("1", "Exercise 1", description = "Placeholder Description of exercise", muscleGroup = "Core", sets = 4, reps = 10, estimatedMinutes = 10),
+                Exercise("1", "Exercise 1", description = "Placeholder Description of exercise", muscleGroup = "Core", sets = 4, reps = 10, estimatedMinutes = 10, isComplete = true),
                 Exercise("2", "Exercise 2", description = "Placeholder Description of exercise", muscleGroup = "Legs", sets = 3, reps = 12, estimatedMinutes = 8),
                 Exercise("3", "Exercise 3", description = "Placeholder Description of exercise", muscleGroup = "Chest", sets = 4, reps = 8, estimatedMinutes = 10),
                 Exercise("4", "Exercise 4", description = "Placeholder Description of exercise", muscleGroup = "Back", sets = 3, reps = 10, estimatedMinutes = 12),

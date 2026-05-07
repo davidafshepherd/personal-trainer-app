@@ -44,7 +44,9 @@ import java.time.temporal.TemporalAdjusters
 
 @Composable
 fun CalendarScreen(
-    traineeId: String = "demo-trainee"
+    traineeId: String = "demo-trainee",
+    forDisplay: Boolean,
+    onClick: (String, LocalDate, Int) -> Unit
 ) {
     val viewModel = viewModel<CalendarViewModel>()
     val uiState by viewModel.uiState.collectAsState()
@@ -76,9 +78,10 @@ fun CalendarScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        AppHeader(title = "Calendar")
-
-        Spacer(modifier = Modifier.height(16.dp))
+        if (!forDisplay){
+            AppHeader(title = "Calendar")
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -172,11 +175,19 @@ fun CalendarScreen(
                                     shape = RoundedCornerShape(6.dp)
                                 )
                                 .clickable {
-                                    viewModel.cycleAvailability(
-                                        traineeId = traineeId,
-                                        date = date,
-                                        hour = hour
-                                    )
+                                    if (forDisplay) {
+                                        if (viewModel.checkAvailability(
+                                                date = date,
+                                                hour = hour)){
+                                            onClick(traineeId,date,hour)
+                                        }
+                                    }else{
+                                        viewModel.cycleAvailability(
+                                            traineeId = traineeId,
+                                            date = date,
+                                            hour = hour
+                                        )
+                                    }
                                 }
                         )
                     }

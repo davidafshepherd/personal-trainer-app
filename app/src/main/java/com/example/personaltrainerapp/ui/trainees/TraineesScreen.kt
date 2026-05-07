@@ -1,102 +1,301 @@
 package com.example.personaltrainerapp.ui.trainees
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.window.embedding.EmbeddingBounds
 import com.example.personaltrainerapp.data.user.UserProfile
+import com.example.personaltrainerapp.data.workouts.Workout
+import com.example.personaltrainerapp.ui.calendar.CalendarScreen
 import com.example.personaltrainerapp.ui.common.AppHeader
+import com.example.personaltrainerapp.ui.library.ExerciseList
+import com.example.personaltrainerapp.ui.library.LibraryViewModel
+import com.example.personaltrainerapp.ui.library.RepsInput
+import com.example.personaltrainerapp.ui.library.WorkoutList
+import com.example.personaltrainerapp.ui.trainer.TrainerViewModel
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlin.math.roundToInt
 
 @Composable
 @Preview(showBackground = true)
 fun TraineesScreen(
-    trainerId: String = "demo-user",
-
-    ) {
+    trainerId: String = "demo-user"
+) {
 
     val navController = rememberNavController()
-    val viewModel = remember { TraineeViewModel() }
-    val uiState by viewModel.uiState.collectAsState()
 
+    val traineeViewModel = remember { TraineeViewModel() }
+    val traineeUiState by traineeViewModel.uiState.collectAsState()
+
+    val libraryViewModel = remember { LibraryViewModel() }
+    val libraryUiState by libraryViewModel.uiState.collectAsState()
+
+    val trainerViewModel = remember { TrainerViewModel() }
+    val trainerUiState by trainerViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadTrainees(trainerId)
+        traineeViewModel.loadTrainees(trainerId)
     }
 
     NavHost(navController, startDestination = "Trainees") {
         composable("Trainees") {
             MyTraineesScreen(
-                isLoading = uiState.isLoading,
-                myTrainees = uiState.myTrainees,
+                isLoading = traineeUiState.isLoading,
+                myTrainees = traineeUiState.myTrainees,
                 viewTrainee = { trainee ->
-                    viewModel.selectTrainee(trainee.uid)
+                    traineeViewModel.selectTrainee(trainee.uid)
                     navController.navigate("selectedTrainee")
-                }
+                },
+                trainerId = trainerId,
+                navController = navController,
+                viewModel = trainerViewModel
             )
         }
         composable("selectedTrainee") {
-            DisplayTrainee(
-                trainee = uiState.selectedTrainee!!,
-                onBack = {navController.popBackStack() }
-            )
+            traineeUiState.selectedTrainee?.let { trainee ->
+                DisplayTrainee(
+                    trainee = trainee,
+                    onBack = { navController.popBackStack() },
+                    navController = navController,
+                    traineeViewModel = traineeViewModel,
+                    libraryViewModel = libraryViewModel,
+                    workouts = libraryUiState.workouts.filter { it.traineeId == trainee.uid }
+                )
+            }
         }
+
+        composable("Schedule Workout") {
+            LaunchedEffect(libraryUiState.workouts) {
+                libraryViewModel.loadAll()
+            }
+            Column() {
+                AppHeader(
+                    title = "Schedule Workout",
+                    onBack = { navController.popBackStack() }
+                )
+                WorkoutList(
+                    workouts = libraryUiState.workouts,
+                    onClick = { workout ->
+                        val traineeId = traineeUiState.selectedTrainee?.uid
+                        val slot = traineeUiState.tempSlot
+                        if (traineeId != null && slot != null) {
+                            libraryViewModel.scheduleWorkout(
+                                workout = workout,
+                                traineeId = traineeId,
+                                slot = slot
+                            )
+                            navController.popBackStack()
+                        }
+                    }
+                )
+            }
+        }
+        composable("Workout Dashboard") {
+            val workout = libraryUiState.selectedWorkout
+            val trainee = traineeUiState.selectedTrainee
+            if (workout != null && trainee != null) {
+                WorkoutDashboard(
+                    workout = workout,
+                    trainee = trainee,
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun WorkoutDashboard(
+    workout: Workout,
+    trainee: UserProfile,
+    onBack: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AppHeader(
+            title = trainee.displayName + ": " + workout.name,
+            onBack = onBack
+        )
+        Log.d("TraineeScreen", "header")
+        val progress = if (workout.exercises.isNotEmpty()) {
+            workout.exercises.count { it.isComplete }.toFloat() / workout.exercises.size.toFloat()
+        } else 0f
+        Log.d("TraineeScreen", "progress: $progress")
+        Box(contentAlignment = Alignment.Center){
+            CircularProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.size(200.dp, 200.dp),
+                strokeWidth = 5.dp
+            )
+            val progressText = if (progress.isNaN()) "0%" else (progress * 100).roundToInt().toString()+"%"
+            Text(text = progressText,
+                fontSize = 40.sp,
+             fontWeight = FontWeight.Bold)
+        }
+
+        Log.d("TraineeScreen", "circle")
+        LazyColumn {
+            items(workout.exercises) {
+                ListItem(
+                    modifier = Modifier.alpha(if (it.isComplete) 0.5F else 1F),
+                    headlineContent = { Text(it.name) },
+                    supportingContent = { Text(it.muscleGroup) },
+                    trailingContent = {
+                        Column {
+                            Text("Reps: " + it.reps)
+                        }
+                    }
+                )
+                LinearProgressIndicator(progress = {
+                    (if (it.isComplete) {
+                        1
+                    } else {
+                        0
+                    }).toFloat()
+                }, modifier = Modifier.fillMaxSize())
+            }
+        }
+        Log.d("TraineeScreen", "column")
     }
 }
 
 @Composable
 private fun DisplayTrainee(
     trainee: UserProfile,
-    onBack: () -> Unit
-){
-    Column{
+    onBack: () -> Unit,
+    navController: NavController,
+    traineeViewModel: TraineeViewModel,
+    libraryViewModel: LibraryViewModel,
+    workouts: List<Workout>
+) {
+    Log.d("TraineeScreen", "Working")
+    var canSeeCurrentWorkout by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(workouts) {
+        try {
+            val currentWorkout = workouts.firstOrNull { workout ->
+                workout.startTime.isBefore(LocalDateTime.now()) && workout.endTime.isAfter(
+                    LocalDateTime.now()
+                )
+            }
+            if (currentWorkout != null) {
+                libraryViewModel.selectWorkout(currentWorkout)
+                canSeeCurrentWorkout = true
+            } else {
+                canSeeCurrentWorkout = false
+            }
+        } catch (e: Exception) {
+            canSeeCurrentWorkout = false
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         AppHeader(
             title = trainee.displayName,
             onBack = onBack
         )
 
+        LazyRow() {
+            items(trainee.tags) { tag ->
+                FilterChip(
+                    selected = true,
+                    label = { Text(tag) },
+                    onClick = {}
+                )
+            }
+        }
 
+        Button(
+            onClick = {
+                navController.navigate("Workout Dashboard")
+            },
+            enabled = canSeeCurrentWorkout
+        ) {
+            Text("Current Workout")
+        }
+        CalendarScreen(
+            traineeId = trainee.uid,
+            forDisplay = true,
+            onClick = { traineeId: String, date: LocalDate, hour: Int ->
+                traineeViewModel.setTempSlot(traineeId, date, hour)
+                navController.navigate("Schedule Workout")
+            }
+        )
     }
-
 }
+
 
 @Composable
 private fun MyTraineesScreen(
     isLoading: Boolean,
     myTrainees: List<UserProfile>,
-    viewTrainee: (UserProfile) -> Unit
+    viewTrainee: (UserProfile) -> Unit,
+    trainerId: String,
+    viewModel: TrainerViewModel,
+    navController: NavController
 ) {
-    var menuExpanded = false
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
+    var input by remember { mutableIntStateOf(0) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -105,24 +304,72 @@ private fun MyTraineesScreen(
         AppHeader(
             title = "Trainees",
             trailingContent = {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-                }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                    }
 
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Set Availability") },
-                        onClick = {
-                            menuExpanded = false
-                            // trigger navigation
-                        }
-                    )
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Set Availability") },
+                            onClick = {
+                                menuExpanded = false
+                                showDialog = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Approve/Deny Request") },
+                            onClick = {
+                                menuExpanded = false
+                                navController.navigate("requests")
+                            }
+                        )
+                    }
                 }
             }
+        )
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Set Availability for Trainees") },
+
+                text = {
+                    OutlinedTextField(
+                        value = "",
+                        onValueChange = {
+                            if (it.all { c -> c.isDigit() }) {
+                                input = it.toInt()
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
+                        singleLine = true,
+                        placeholder = { Text("e.g. 5") }
+                    )
+                },
+
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.setTrainerAvailability(trainerId, availability = input)
+                            showDialog = false
+                        }
+                    ) {
+                        Text("Set")
+                    }
+                },
+
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
             )
+        }
         when {
             isLoading -> {
                 Text("Loading Trainees...")
@@ -153,7 +400,7 @@ private fun TraineeListItem(
     trainee: UserProfile,
     onClick: () -> Unit
 ) {
-    androidx.compose.foundation.layout.Row(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)

@@ -85,6 +85,15 @@ class CalendarViewModel(
         }
     }
 
+    fun checkAvailability(
+        date: LocalDate,
+        hour: Int
+    ): Boolean{
+        val key = availabilityKey(date, hour)
+        val currentStatus = _uiState.value.slots[key] ?: AvailabilityStatus.IDEAL
+        return currentStatus != AvailabilityStatus.BUSY
+    }
+
     private fun nextAvailabilityStatus(
         current: AvailabilityStatus
     ): AvailabilityStatus {

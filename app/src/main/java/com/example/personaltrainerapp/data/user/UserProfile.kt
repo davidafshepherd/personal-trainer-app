@@ -10,5 +10,7 @@ data class UserProfile(
     val tags: List<String> = emptyList(),
     val profileImageUrl: String = "",
 
-    var trainerId: String? = null
+    var trainerId: String? = null,
+
+    var availability: Int = 0
 )

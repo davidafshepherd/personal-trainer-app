@@ -1,5 +1,7 @@
 package com.example.personaltrainerapp.data.workouts
 
+import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
+
 interface WorkoutsRepository {
     suspend fun getUpcomingWorkouts(
         traineeId: String
@@ -13,4 +15,5 @@ interface WorkoutsRepository {
 
     suspend fun getAllWorkouts(): List<Workout>
     suspend fun getWorkoutById(workoutId: String): Workout?
+    suspend fun scheduleWorkout(workout: Workout, traineeId: String, slot: AvailabilitySlot)
 }

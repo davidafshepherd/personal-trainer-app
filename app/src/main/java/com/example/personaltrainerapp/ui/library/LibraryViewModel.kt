@@ -2,6 +2,7 @@ package com.example.personaltrainerapp.ui.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.workouts.FakeWorkoutsRepository
 import com.example.personaltrainerapp.data.exercises.FakeExerciseRepository
@@ -24,13 +25,13 @@ data class LibraryUiState(
 
 class LibraryViewModel(
     private val wRepository: WorkoutsRepository = FakeWorkoutsRepository(),
-    private val eRepository: ExerciseRepository = FakeExerciseRepository()
+    private val eRepository: FakeExerciseRepository = FakeExerciseRepository()
 
-): ViewModel(){
+) : ViewModel() {
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState
 
-    fun loadAll(){
+    fun loadAll() {
         viewModelScope.launch {
             val workouts = wRepository.getAllWorkouts()
             val exercises = eRepository.getAllExercises()
@@ -41,38 +42,43 @@ class LibraryViewModel(
             )
         }
     }
-    fun selectWorkout(workout: Workout){
+
+    fun selectWorkout(workout: Workout) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 selectedWorkout = workout
             )
         }
     }
-    fun selectExercise(exercise: Exercise){
+
+    fun selectExercise(exercise: Exercise) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
-                selectedExercise= exercise
+                selectedExercise = exercise
             )
         }
     }
-    fun newWorkout(){
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                creatingWorkout = true
-            )
-        }
-    }
-    fun newExercise(){
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                creatingExercise = true
-            )
-        }
-    }
-    fun createExercise(){
+
+    fun saveExercise(exercise: Exercise) {
 
     }
-    fun createWorkout(){
 
+    fun saveWorkout(workout: Workout) {
+
+    }
+
+    fun scheduleWorkout(
+        workout: Workout,
+        traineeId: String,
+        slot: AvailabilitySlot
+    ) {
+        viewModelScope.launch {
+            wRepository.scheduleWorkout(
+                workout,
+                traineeId,
+                slot
+            )
+        }
+        loadAll()
     }
 }
