@@ -18,7 +18,7 @@ data class CalendarUiState(
 )
 
 class CalendarViewModel(
-    private val repository: AvailabilityRepository = FakeAvailabilityRepository()
+    private val repository: AvailabilityRepository = AvailabilityRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CalendarUiState())
