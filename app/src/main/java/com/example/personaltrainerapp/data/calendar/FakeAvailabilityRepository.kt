@@ -2,11 +2,11 @@ package com.example.personaltrainerapp.data.calendar
 
 import java.time.LocalDate
 
-class FakeAvailabilityRepository : AvailabilityRepository {
+class FakeAvailabilityRepository {
 
     private var slots = emptyList<AvailabilitySlot>()
 
-    override suspend fun getAvailabilitySlots(
+    suspend fun getAvailabilitySlots(
         traineeId: String,
         startDate: LocalDate,
         endDate: LocalDate
@@ -18,7 +18,7 @@ class FakeAvailabilityRepository : AvailabilityRepository {
         }
     }
 
-    override suspend fun saveAvailabilitySlot(slot: AvailabilitySlot) {
+     suspend fun saveAvailabilitySlot(slot: AvailabilitySlot) {
         slots = slots.filterNot { existing ->
             existing.traineeId == slot.traineeId &&
                     existing.date == slot.date &&
