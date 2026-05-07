@@ -63,7 +63,6 @@ import com.example.personaltrainerapp.ui.calendar.CalendarScreen
 import com.example.personaltrainerapp.ui.common.AppHeader
 import com.example.personaltrainerapp.ui.library.ExerciseList
 import com.example.personaltrainerapp.ui.library.LibraryViewModel
-import com.example.personaltrainerapp.ui.library.RepsInput
 import com.example.personaltrainerapp.ui.library.WorkoutList
 import com.example.personaltrainerapp.ui.trainer.TrainerViewModel
 import java.time.LocalDate
@@ -120,7 +119,7 @@ fun TraineesScreen(
 
         composable("Schedule Workout") {
             LaunchedEffect(libraryUiState.workouts) {
-                libraryViewModel.loadAll()
+                libraryViewModel.loadAll(trainerId)
             }
             Column() {
                 AppHeader(
@@ -136,6 +135,7 @@ fun TraineesScreen(
                             libraryViewModel.scheduleWorkout(
                                 workout = workout,
                                 traineeId = traineeId,
+                                trainerId = trainerId,
                                 slot = slot
                             )
                             navController.popBackStack()

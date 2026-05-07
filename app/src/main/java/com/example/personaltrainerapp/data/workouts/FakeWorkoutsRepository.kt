@@ -2,6 +2,7 @@ package com.example.personaltrainerapp.data.workouts
 
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import java.time.LocalDateTime
+import kotlin.math.roundToInt
 
 class FakeWorkoutsRepository : WorkoutsRepository {
 
@@ -80,7 +81,8 @@ class FakeWorkoutsRepository : WorkoutsRepository {
                 Exercise("4", "Exercise 4", description = "Placeholder Description of exercise", muscleGroup = "Back", sets = 3, reps = 10, estimatedMinutes = 12),
                 Exercise("5", "Exercise 5", description = "Placeholder Description of exercise", muscleGroup = "Core", sets = 4, reps = 10, estimatedMinutes = 10),
                 Exercise("6", "Exercise 6", description = "Placeholder Description of exercise", muscleGroup = "Shoulders", sets = 3, reps = 10, estimatedMinutes = 10)
-            )
+            ),
+            exerciseTypeSplit = listOf(Pair("Core", 40), Pair("Legs", 60))
         )
     }
 }

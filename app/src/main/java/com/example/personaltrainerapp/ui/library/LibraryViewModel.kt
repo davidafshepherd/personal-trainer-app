@@ -18,9 +18,7 @@ data class LibraryUiState(
     val workouts: List<Workout> = emptyList(),
     val exercises: List<Exercise> = emptyList(),
     var selectedWorkout: Workout? = null,
-    var selectedExercise: Exercise? = null,
-    var creatingWorkout: Boolean = false,
-    var creatingExercise: Boolean = false
+    var selectedExercise: Exercise? = null
 )
 
 class LibraryViewModel(
@@ -31,14 +29,14 @@ class LibraryViewModel(
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState
 
-    fun loadAll() {
+    fun loadAll(trainerId: String) {
         viewModelScope.launch {
             val workouts = wRepository.getAllWorkouts()
             val exercises = eRepository.getAllExercises()
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                workouts = workouts,
-                exercises = exercises
+                workouts = workouts.filter { it.trainerId == trainerId},
+                exercises = exercises.filter { it.trainerId == trainerId},
             )
         }
     }
@@ -70,6 +68,7 @@ class LibraryViewModel(
     fun scheduleWorkout(
         workout: Workout,
         traineeId: String,
+        trainerId: String,
         slot: AvailabilitySlot
     ) {
         viewModelScope.launch {
@@ -79,6 +78,6 @@ class LibraryViewModel(
                 slot
             )
         }
-        loadAll()
+        loadAll(trainerId)
     }
 }

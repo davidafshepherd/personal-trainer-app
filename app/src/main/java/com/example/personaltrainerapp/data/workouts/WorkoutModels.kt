@@ -23,5 +23,6 @@ data class Exercise(
     val sets: Int = 0,
     var reps: Int = 8,
     val estimatedMinutes: Int = 0,
-    val isComplete: Boolean = false
+    val isComplete: Boolean = false,
+    val trainerId: String = ""
 )

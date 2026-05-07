@@ -61,7 +61,7 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
 
         entry<TrainerHomeRoute> { BlankScreen("Home") }
         entry<TrainerTraineesRoute> { TraineesScreen() }
-        entry<TrainerLibraryRoute> { LibraryScreen() }
+        entry<TrainerLibraryRoute> { LibraryScreen(trainerId = user.uid) }
         entry<TrainerProfileRoute> { ProfileScreen(user = user) }
     }
 

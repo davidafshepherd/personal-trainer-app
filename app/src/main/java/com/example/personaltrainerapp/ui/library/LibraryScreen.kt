@@ -56,10 +56,14 @@ import com.example.personaltrainerapp.data.exercises.MuscleGroups
 import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.common.AppHeader
+import kotlin.collections.distinct
+import kotlin.math.roundToInt
 
 
 @Composable
-fun LibraryScreen() {
+fun LibraryScreen(
+    trainerId: String
+) {
     val startDestination = 0
     val viewModel = viewModel<LibraryViewModel>()
     val uiState by viewModel.uiState.collectAsState()
@@ -67,7 +71,7 @@ fun LibraryScreen() {
 
 
     LaunchedEffect(uiState.workouts, uiState.exercises) {
-        viewModel.loadAll()
+        viewModel.loadAll(trainerId)
     }
     Column(
         modifier = Modifier
@@ -97,7 +101,8 @@ fun LibraryScreen() {
                 NewWorkout(
                     navController = navController,
                     viewModel = viewModel,
-                    uiState = uiState
+                    uiState = uiState,
+                    trainerId = trainerId
                 )
             }
             composable("Display Exercise") {
@@ -230,7 +235,8 @@ fun WorkoutsLibrary(
 fun NewWorkout(
     navController: NavController,
     viewModel: LibraryViewModel,
-    uiState: LibraryUiState
+    uiState: LibraryUiState,
+    trainerId: String
 ) {
     val exercises = remember { mutableStateListOf<Exercise>() }
     var addingExercise by remember { mutableStateOf(false) }
@@ -268,9 +274,27 @@ fun NewWorkout(
                     onBack = { navController.popBackStack() },
                     trailingContent = {
                         IconButton(onClick = {
-                            val newWorkout = Workout()
-                            viewModel.saveWorkout(newWorkout)
-                            navController.popBackStack()
+                            if (!exercises.isEmpty()) {
+                                val newWorkout = Workout(
+                                    id = "",
+                                    trainerId = trainerId,
+                                    name = nameState.text as String,
+                                    description = descState.text as String,
+                                    exercises = exercises,
+                                    estimatedMinutes = exercises.sumOf { it.estimatedMinutes },
+                                    exerciseTypeSplit = exercises.map { it.muscleGroup }.distinct()
+                                        .map { group ->
+                                            Pair(
+                                                group,
+                                                ((exercises.sumOf { if (group == it.muscleGroup) it.estimatedMinutes else 0 } / exercises.sumOf { it.estimatedMinutes }
+                                                    .toFloat()) * 100).roundToInt()
+                                            )
+                                        }
+                                )
+                                viewModel.saveWorkout(newWorkout)
+                                navController.popBackStack()
+                            }
+
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Save,
@@ -304,19 +328,18 @@ fun NewWorkout(
                 HorizontalDivider(thickness = 2.dp)
                 LazyColumn {
                     items(exercises) {
+                        var reps by remember { mutableStateOf(it.reps.toString()) }
                         ListItem(
                             headlineContent = { Text(it.name) },
                             supportingContent = { Text(it.muscleGroup) },
                             trailingContent = {
-                                Row {
-                                    Text("Reps: ")
-                                    RepsInput(
-                                        value = it.reps,
-                                        onRepsChange = { r ->
-                                            it.reps = r.toInt()
-                                        }
-                                    )
-                                }
+                                RepsInput(
+                                    value = reps,
+                                    onRepsChange = { r ->
+                                        reps = r
+                                    }
+                                )
+
                             },
                             leadingContent = {
                                 IconButton(
@@ -454,7 +477,7 @@ fun ExerciseList(
     exercises: List<Exercise>,
     onClick: (Exercise) -> Unit
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn() {
         items(exercises) { exercise ->
             ExerciseListItem(
                 exercise = exercise,
@@ -470,7 +493,7 @@ fun WorkoutList(
     workouts: List<Workout>,
     onClick: (Workout) -> Unit
 ) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn() {
         items(workouts) { workout ->
             WorkoutListItem(
                 workout = workout,
@@ -500,8 +523,9 @@ private fun WorkoutListItem(
             )
         },
         supportingContent = {
+
             Text(
-                workout.estimatedMinutes.toString() + " mins: "
+                workout.estimatedMinutes.toString() + " mins: " + workout.exerciseTypeSplit.map { (group, time) -> ", $group: $time Mins" }
             )
         },
         modifier = Modifier.clickable(onClick = onClick)
@@ -574,13 +598,13 @@ fun DisplayWorkout(
 
 @Composable
 fun RepsInput(
-    value: Int,
+    value: String,
     onRepsChange: (String) -> Unit
 ) {
     OutlinedTextField(
-        value = "10",//value.toString(),
+        value = value,
         onValueChange = {
-            if (it.all { c -> c.isDigit() }) {
+            if (it.isEmpty() || it.all { c -> c.isDigit() }) {
                 onRepsChange(it)
             }
         },
@@ -588,7 +612,8 @@ fun RepsInput(
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number
         ),
-        modifier = Modifier.size(50.dp, 50.dp)
+        modifier = Modifier.size(80.dp, 60.dp),
+        label = { Text("Reps:") }
     )
 }
 
