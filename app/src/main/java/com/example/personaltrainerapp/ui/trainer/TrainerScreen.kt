@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.example.personaltrainerapp.data.trainer.TrainerTags
 import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.ui.common.AppHeader
+import com.example.personaltrainerapp.ui.profile.ProfileViewScreen
 
 @Composable
 fun TrainerScreen(
@@ -60,18 +61,13 @@ fun TrainerScreen(
 
     when {
         uiState.selectedTrainer != null -> {
-            TrainerProfileScreen(
-                trainer = uiState.selectedTrainer!!,
-                onBack = {
-                    isSearching = false
-                    viewedTrainer = null
-                },
-                showRequestButton = false,
-                showUnenrolButton = true,
-                onRequestTrainer = {},
-                onUnenrolTrainer = {
+            ProfileViewScreen(
+                title = "Trainer",
+                profile = uiState.selectedTrainer!!,
+                dangerButtonText = "Unenrol",
+                onDangerButtonClick = {
                     viewModel.unenrolFromTrainer(traineeId)
-                },
+                }
             )
         }
 
@@ -86,22 +82,20 @@ fun TrainerScreen(
             val alreadyRequested =
                 viewedTrainer!!.uid in uiState.pendingRequestedTrainerIds
 
-            TrainerProfileScreen(
-                trainer = viewedTrainer!!,
+            ProfileViewScreen(
+                title = "Trainer",
+                profile = viewedTrainer!!,
                 onBack = { viewedTrainer = null },
-                showRequestButton = true,
-                showUnenrolButton = false,
-                requestButtonEnabled = !alreadyRequested,
-                requestButtonText = if (alreadyRequested) "Already requested" else "Request Trainer",
-                onRequestTrainer = {
+                primaryButtonText = if (alreadyRequested) "Already requested" else "Request Trainer",
+                primaryButtonEnabled = !alreadyRequested,
+                onPrimaryButtonClick = {
                     viewModel.requestTrainer(
                         traineeId = traineeId,
                         trainer = viewedTrainer!!
                     )
                     viewedTrainer = null
                     isSearching = false
-                },
-                onUnenrolTrainer = {}
+                }
             )
         }
 
@@ -297,107 +291,6 @@ private fun TrainerListItem(
                     tag.replaceFirstChar(Char::uppercase)
                 }
             )
-        }
-    }
-}
-
-@Composable
-private fun TrainerProfileScreen(
-    trainer: UserProfile,
-    onBack: () -> Unit,
-    showRequestButton: Boolean,
-    showUnenrolButton: Boolean,
-    onRequestTrainer: () -> Unit,
-    onUnenrolTrainer: () -> Unit,
-    requestButtonEnabled: Boolean = true,
-    requestButtonText: String = "Request Trainer"
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-    ) {
-        AppHeader(
-            title = "Trainer",
-            onBack = onBack
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        androidx.compose.foundation.layout.Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape),
-                shape = CircleShape
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.padding(14.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.size(16.dp))
-
-            Text(
-                text = trainer.displayName,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Section(title = "Bio") {
-            Text(trainer.bio)
-        }
-
-        Section(title = "Contact") {
-            Text("Email")
-            Text(trainer.email)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text("Phone Number")
-            Text(trainer.phoneNumber)
-        }
-
-        Section(title = "Expertise") {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(trainer.tags) { tag ->
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(tag) }
-                    )
-                }
-            }
-        }
-
-        if (showRequestButton) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = onRequestTrainer,
-                enabled = requestButtonEnabled,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(requestButtonText)
-            }
-        }
-
-        if (showUnenrolButton) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = onUnenrolTrainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Unenrol")
-            }
         }
     }
 }
