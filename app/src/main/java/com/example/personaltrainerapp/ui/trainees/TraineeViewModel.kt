@@ -21,7 +21,7 @@ data class TraineeUiState(
 )
 
 class TraineeViewModel(
-    private val repository: FakeTraineeRepository = FakeTraineeRepository()
+    private val repository: TraineeRepository = TraineeRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TraineeUiState())

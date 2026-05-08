@@ -1,12 +1,12 @@
 package com.example.personaltrainerapp.ui.library
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import com.example.personaltrainerapp.data.workouts.Exercise
-import com.example.personaltrainerapp.data.workouts.FakeWorkoutsRepository
-import com.example.personaltrainerapp.data.exercises.FakeExerciseRepository
 import com.example.personaltrainerapp.data.exercises.ExerciseRepository
+import com.example.personaltrainerapp.data.workouts.RealWorkoutsRepository
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.data.workouts.WorkoutsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +22,8 @@ data class LibraryUiState(
 )
 
 class LibraryViewModel(
-    private val wRepository: WorkoutsRepository = FakeWorkoutsRepository(),
-    private val eRepository: FakeExerciseRepository = FakeExerciseRepository()
+    private val wRepository: RealWorkoutsRepository = RealWorkoutsRepository(),
+    private val eRepository: ExerciseRepository = ExerciseRepository()
 
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -31,12 +31,14 @@ class LibraryViewModel(
 
     fun loadAll(trainerId: String) {
         viewModelScope.launch {
-            val workouts = wRepository.getAllWorkouts()
-            val exercises = eRepository.getAllExercises()
+            val workouts = wRepository.getAllWorkouts(trainerId)
+            Log.d("CheckListR", ""+workouts.map { it.name })
+
+            val exercises = eRepository.getAllExercises(trainerId)
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                workouts = workouts.filter { it.trainerId == trainerId},
-                exercises = exercises.filter { it.trainerId == trainerId},
+                workouts = workouts,
+                exercises = exercises,
             )
         }
     }
@@ -58,11 +60,16 @@ class LibraryViewModel(
     }
 
     fun saveExercise(exercise: Exercise) {
+        viewModelScope.launch {
+            eRepository.saveNewExercise(exercise)
+        }
 
     }
 
     fun saveWorkout(workout: Workout) {
-
+        viewModelScope.launch {
+            wRepository.saveNewWorkout(workout)
+        }
     }
 
     fun scheduleWorkout(

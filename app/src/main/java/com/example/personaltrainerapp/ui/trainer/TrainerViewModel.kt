@@ -2,6 +2,7 @@ package com.example.personaltrainerapp.ui.trainer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.personaltrainerapp.data.trainer.FakeTrainerRepository
 import com.example.personaltrainerapp.data.trainer.TrainerRepository
 import com.example.personaltrainerapp.data.user.UserProfile
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,6 @@ class TrainerViewModel(
     fun loadTrainers() {
         viewModelScope.launch {
             val trainers = repository.getAllTrainers()
-
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 trainers = trainers
@@ -41,6 +41,13 @@ class TrainerViewModel(
                 pendingRequestedTrainerIds =
                     _uiState.value.pendingRequestedTrainerIds + trainer.uid
             )
+        }
+    }
+
+
+    fun setTrainerAvailability(trainerId: String, availability:Int){
+        viewModelScope.launch {
+            repository.setTrainerAvailability(trainerId, availability)
         }
     }
 
@@ -64,6 +71,13 @@ class TrainerViewModel(
         }
     }
 
+    fun getTrainerById(trainerId: String){
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                selectedTrainer = repository.getTrainerById(trainerId)!!
+            )
+        }
+    }
     fun checkPendingRequest(
         traineeId: String,
         trainerId: String

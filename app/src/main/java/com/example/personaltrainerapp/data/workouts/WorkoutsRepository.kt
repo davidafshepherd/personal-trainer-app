@@ -10,10 +10,11 @@ interface WorkoutsRepository {
     suspend fun markExerciseComplete(
         workoutId: String,
         exerciseId: String,
-        isComplete: Boolean
+        completed: Boolean
     )
 
-    suspend fun getAllWorkouts(): List<Workout>
+    suspend fun getAllWorkouts(trainerId:String): List<Workout>
     suspend fun getWorkoutById(workoutId: String): Workout?
     suspend fun scheduleWorkout(workout: Workout, traineeId: String, slot: AvailabilitySlot)
+    suspend fun saveNewWorkout(workout: Workout)
 }

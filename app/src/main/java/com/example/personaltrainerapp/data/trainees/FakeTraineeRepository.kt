@@ -16,7 +16,6 @@ class FakeTraineeRepository {
         UserProfile("user", "example7@gmail.com", "User 7", bio = "I am User 7", "07777 555 777",UserRole.TRAINEE, listOf("Abs", "Cardio", "Core"), "", "demo-user")
     )
 
-
     suspend fun getAllTrainees(): List<UserProfile>{
         return trainees
     }
@@ -28,5 +27,4 @@ class FakeTraineeRepository {
     suspend fun updateTrainer(traineeId: String, trainerId:String) {
         getTraineeById(traineeId)?.trainerId = trainerId
     }
-
 }

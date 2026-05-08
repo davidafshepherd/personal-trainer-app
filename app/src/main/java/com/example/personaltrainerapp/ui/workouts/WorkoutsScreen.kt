@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.common.AppHeader
+import com.google.firebase.Timestamp
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -146,9 +148,13 @@ private fun WorkoutListItem(
             )
 
             Text(
-                text = workout.startTime.format(
-                    DateTimeFormatter.ofPattern("d/M/yy · h:mm a")
-                )
+                text = workout.startTime
+                    .toDate()
+                    .toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime().format(
+                        DateTimeFormatter.ofPattern("d/M/yy · h:mm a")
+                    )
             )
         }
     }
@@ -160,7 +166,7 @@ private fun WorkoutDetailScreen(
     onBack: () -> Unit,
     onExerciseToggle: (String) -> Unit
 ) {
-    val now = LocalDateTime.now()
+    val now = Timestamp.now()
     val canCompleteExercises = now >= workout.startTime && now <= workout.endTime
 
     Column(
@@ -233,17 +239,17 @@ private fun ExerciseListItem(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = "${exercise.name} (${exercise.muscleGroup})",
+                text = "${exercise.name} (${exercise.muscleGroups})",
                 fontWeight = FontWeight.SemiBold
             )
 
             Text(
-                text = "${exercise.sets}x${exercise.reps} reps (${exercise.estimatedMinutes} min)"
+                text = "${exercise.reps} reps (${exercise.estimatedMinutes} min)"
             )
         }
 
         Checkbox(
-            checked = exercise.isComplete,
+            checked = exercise.completed,
             onCheckedChange = {
                 if (canComplete) {
                     onToggle()

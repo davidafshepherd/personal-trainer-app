@@ -29,20 +29,19 @@ class TraineeRepository {
                 .document(traineeId)
                 .get()
                 .await()
-
             doc.toObject(UserProfile::class.java)
         } catch (e: Exception) {
             null
         }
     }
 
-    suspend fun addTrainee(
-        trainerId: String,
-        traineeId: String
+    suspend fun updateTrainer(
+        traineeId: String,
+        trainerId: String
     ) {
         db.collection("users")
-            .document(trainerId)
-            //.update("trainerId", trainerId)
-            //.await()
+            .document(traineeId)
+            .update("trainerId", trainerId)
+            .await()
     }
 }

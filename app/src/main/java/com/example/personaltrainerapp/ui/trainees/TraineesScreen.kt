@@ -65,6 +65,7 @@ import com.example.personaltrainerapp.ui.library.ExerciseList
 import com.example.personaltrainerapp.ui.library.LibraryViewModel
 import com.example.personaltrainerapp.ui.library.WorkoutList
 import com.example.personaltrainerapp.ui.trainer.TrainerViewModel
+import com.google.firebase.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
@@ -174,7 +175,7 @@ fun WorkoutDashboard(
         )
         Log.d("TraineeScreen", "header")
         val progress = if (workout.exercises.isNotEmpty()) {
-            workout.exercises.count { it.isComplete }.toFloat() / workout.exercises.size.toFloat()
+            workout.exercises.count { it.completed }.toFloat() / workout.exercises.size.toFloat()
         } else 0f
         Log.d("TraineeScreen", "progress: $progress")
         Box(contentAlignment = Alignment.Center){
@@ -191,11 +192,11 @@ fun WorkoutDashboard(
 
         Log.d("TraineeScreen", "circle")
         LazyColumn {
-            items(workout.exercises) {
+            items(workout.exercises) { it ->
                 ListItem(
-                    modifier = Modifier.alpha(if (it.isComplete) 0.5F else 1F),
+                    modifier = Modifier.alpha(if (it.completed) 0.5F else 1F),
                     headlineContent = { Text(it.name) },
-                    supportingContent = { Text(it.muscleGroup) },
+                    supportingContent = { Text(""+it.muscleGroups) },
                     trailingContent = {
                         Column {
                             Text("Reps: " + it.reps)
@@ -203,7 +204,7 @@ fun WorkoutDashboard(
                     }
                 )
                 LinearProgressIndicator(progress = {
-                    (if (it.isComplete) {
+                    (if (it.completed) {
                         1
                     } else {
                         0
@@ -230,8 +231,9 @@ private fun DisplayTrainee(
     LaunchedEffect(workouts) {
         try {
             val currentWorkout = workouts.firstOrNull { workout ->
-                workout.startTime.isBefore(LocalDateTime.now()) && workout.endTime.isAfter(
-                    LocalDateTime.now()
+
+                workout.startTime.toInstant().isBefore(Timestamp.now().toInstant()) && workout.endTime.toInstant().isAfter(
+                    Timestamp.now().toInstant()
                 )
             }
             if (currentWorkout != null) {

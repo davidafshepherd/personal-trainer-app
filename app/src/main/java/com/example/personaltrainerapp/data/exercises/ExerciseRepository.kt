@@ -8,9 +8,10 @@ import kotlinx.coroutines.tasks.await
 class ExerciseRepository {
 
     private val db = FirebaseFirestore.getInstance()
-    suspend fun getAllExercises(): List<Exercise> {
+    suspend fun getAllExercises(trainerId: String): List<Exercise> {
         return try {
             val snapshot = db.collection("exercises")
+                .whereEqualTo("trainerId", trainerId)
                 .get()
                 .await()
 
@@ -20,5 +21,10 @@ class ExerciseRepository {
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    suspend fun saveNewExercise(exercise: Exercise){
+        val doc = db.collection("exercises").document()
+        doc.set(exercise.copy(id = doc.id))
     }
 }

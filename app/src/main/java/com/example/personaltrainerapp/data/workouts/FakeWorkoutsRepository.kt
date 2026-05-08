@@ -1,21 +1,22 @@
 package com.example.personaltrainerapp.data.workouts
 
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
+import com.google.firebase.Timestamp
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
 class FakeWorkoutsRepository : WorkoutsRepository {
 
-    private var workouts = listOf(
-        sampleWorkout("1", "Workout 1", LocalDateTime.of(2026, 5, 7, 2, 50)),
-        sampleWorkout("2", "Workout 2", LocalDateTime.of(2026, 5, 11, 13, 0)),
-        sampleWorkout("3", "Workout 3", LocalDateTime.of(2026, 5, 12, 13, 0)),
-        sampleWorkout("4", "Workout 4", LocalDateTime.of(2026, 5, 14, 15, 0)),
-        sampleWorkout("5", "Workout 5", LocalDateTime.of(2026, 5, 18, 14, 0)),
-        sampleWorkout("6", "Workout 6", LocalDateTime.of(2026, 5, 21, 12, 0))
-    )
+    private var workouts = emptyList<Workout>()
+        //sampleWorkout("1", "Workout 1", LocalDateTime.of(2026, 5, 7, 2, 50)),
+        //sampleWorkout("2", "Workout 2", LocalDateTime.of(2026, 5, 11, 13, 0)),
+        //sampleWorkout("3", "Workout 3", LocalDateTime.of(2026, 5, 12, 13, 0)),
+        //ampleWorkout("4", "Workout 4", LocalDateTime.of(2026, 5, 14, 15, 0)),
+        //sampleWorkout("5", "Workout 5", LocalDateTime.of(2026, 5, 18, 14, 0)),
+        //sampleWorkout("6", "Workout 6", LocalDateTime.of(2026, 5, 21, 12, 0))
 
-    override suspend fun getAllWorkouts(): List<Workout>{
+
+    override suspend fun getAllWorkouts(trainerId:String): List<Workout>{
         return workouts
     }
 
@@ -34,7 +35,7 @@ class FakeWorkoutsRepository : WorkoutsRepository {
     override suspend fun markExerciseComplete(
         workoutId: String,
         exerciseId: String,
-        isComplete: Boolean
+        completed: Boolean
     ) {
         workouts = workouts.map { workout ->
             if (workout.id != workoutId) {
@@ -43,7 +44,7 @@ class FakeWorkoutsRepository : WorkoutsRepository {
                 workout.copy(
                     exercises = workout.exercises.map { exercise ->
                         if (exercise.id == exerciseId) {
-                            exercise.copy(isComplete = isComplete)
+                            exercise.copy(completed = completed)
                         } else {
                             exercise
                         }
@@ -62,10 +63,14 @@ class FakeWorkoutsRepository : WorkoutsRepository {
 
     }
 
+    override suspend fun saveNewWorkout(workout: Workout) {
+        TODO("Not yet implemented")
+    }
+
     private fun sampleWorkout(
         id: String,
         name: String,
-        startTime: LocalDateTime
+        startTime: Timestamp
     ): Workout {
         return Workout(
             id = id,
@@ -73,16 +78,15 @@ class FakeWorkoutsRepository : WorkoutsRepository {
             traineeId = "user",
             name = name,
             startTime = startTime,
-            endTime = startTime.plusMinutes(300),
+            endTime = startTime,
             exercises = listOf(
-                Exercise("1", "Exercise 1", description = "Placeholder Description of exercise", muscleGroup = "Core", sets = 4, reps = 10, estimatedMinutes = 10, isComplete = true),
-                Exercise("2", "Exercise 2", description = "Placeholder Description of exercise", muscleGroup = "Legs", sets = 3, reps = 12, estimatedMinutes = 8),
-                Exercise("3", "Exercise 3", description = "Placeholder Description of exercise", muscleGroup = "Chest", sets = 4, reps = 8, estimatedMinutes = 10),
-                Exercise("4", "Exercise 4", description = "Placeholder Description of exercise", muscleGroup = "Back", sets = 3, reps = 10, estimatedMinutes = 12),
-                Exercise("5", "Exercise 5", description = "Placeholder Description of exercise", muscleGroup = "Core", sets = 4, reps = 10, estimatedMinutes = 10),
-                Exercise("6", "Exercise 6", description = "Placeholder Description of exercise", muscleGroup = "Shoulders", sets = 3, reps = 10, estimatedMinutes = 10)
-            ),
-            exerciseTypeSplit = listOf(Pair("Core", 40), Pair("Legs", 60))
+                Exercise("1", "Exercise 1", description = "Placeholder Description of exercise", muscleGroups = listOf("Core"), reps = 10, estimatedMinutes = 10, completed = true),
+                Exercise("2", "Exercise 2", description = "Placeholder Description of exercise", muscleGroups = listOf("Legs"), reps = 12, estimatedMinutes = 8),
+                Exercise("3", "Exercise 3", description = "Placeholder Description of exercise", muscleGroups = listOf("Chest"), reps = 8, estimatedMinutes = 10),
+                Exercise("4", "Exercise 4", description = "Placeholder Description of exercise", muscleGroups = listOf("Back"), reps = 10, estimatedMinutes = 12),
+                Exercise("5", "Exercise 5", description = "Placeholder Description of exercise", muscleGroups = listOf("Core"), reps = 10, estimatedMinutes = 10),
+                Exercise("6", "Exercise 6", description = "Placeholder Description of exercise", muscleGroups = listOf("Shoulders"), reps = 10, estimatedMinutes = 10)
+            )
         )
     }
 }

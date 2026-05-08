@@ -117,7 +117,7 @@ class TrainerRepository {
 
     suspend fun setTrainerAvailability(trainerId: String, availability: Int):Boolean {
         return try {
-            val doc = db.collection("users")
+            db.collection("users")
                 .document(trainerId)
                 .set(
                     mapOf("availability" to availability),

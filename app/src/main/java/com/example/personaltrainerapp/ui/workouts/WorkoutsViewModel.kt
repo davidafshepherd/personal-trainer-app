@@ -2,7 +2,8 @@ package com.example.personaltrainerapp.ui.workouts
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.personaltrainerapp.data.workouts.FakeWorkoutsRepository
+import com.example.personaltrainerapp.data.workouts.RealWorkoutsRepository
+//import com.example.personaltrainerapp.data.workouts.FakeWorkoutsRepository
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.data.workouts.WorkoutsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,7 @@ data class WorkoutsUiState(
 )
 
 class WorkoutsViewModel(
-    private val repository: WorkoutsRepository = FakeWorkoutsRepository()
+    private val repository: WorkoutsRepository = RealWorkoutsRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkoutsUiState())
@@ -80,13 +81,13 @@ class WorkoutsViewModel(
         val exercise = workout.exercises.firstOrNull { it.id == exerciseId }
             ?: return
 
-        val newCompleteValue = !exercise.isComplete
+        val newCompleteValue = !exercise.completed
 
         viewModelScope.launch {
             repository.markExerciseComplete(
                 workoutId = workoutId,
                 exerciseId = exerciseId,
-                isComplete = newCompleteValue
+                completed = newCompleteValue
             )
 
             val updatedWorkouts = currentState.workouts.map { existingWorkout ->
@@ -96,7 +97,7 @@ class WorkoutsViewModel(
                     existingWorkout.copy(
                         exercises = existingWorkout.exercises.map { existingExercise ->
                             if (existingExercise.id == exerciseId) {
-                                existingExercise.copy(isComplete = newCompleteValue)
+                                existingExercise.copy(completed = newCompleteValue)
                             } else {
                                 existingExercise
                             }
