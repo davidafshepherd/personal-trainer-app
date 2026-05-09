@@ -1,5 +1,6 @@
 package com.example.personaltrainerapp.ui.workouts
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -86,6 +87,7 @@ private fun WorkoutListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         AppHeader(title = "Upcoming Workouts")

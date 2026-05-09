@@ -128,6 +128,7 @@ fun ProfileScreen(user: UserProfile, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
         // AppHeader
