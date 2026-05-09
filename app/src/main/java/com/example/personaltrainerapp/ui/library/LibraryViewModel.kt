@@ -31,7 +31,7 @@ class LibraryViewModel(
 
     fun loadAll(trainerId: String) {
         viewModelScope.launch {
-            val workouts = wRepository.getAllWorkouts(trainerId)
+            val workouts = wRepository.getAllWorkouts()
             Log.d("CheckListR", ""+workouts.map { it.name })
 
             val exercises = eRepository.getAllExercises(trainerId)

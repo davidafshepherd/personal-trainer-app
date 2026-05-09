@@ -17,7 +17,7 @@ class RealWorkoutsRepository : WorkoutsRepository {
 
     private val db = FirebaseFirestore.getInstance()
 
-    override suspend fun getAllWorkouts(trainerId: String): List<Workout> {
+    override suspend fun getAllWorkouts(): List<Workout> {
         return try {
             val snapshot = db.collection("workouts")
                 //.whereEqualTo("trainerId", trainerId)
@@ -57,12 +57,14 @@ class RealWorkoutsRepository : WorkoutsRepository {
     }
 
     suspend fun setWorkoutById(workoutId: String, workout: Workout) {
-        return try {
-            db.collection("workouts").document(workoutId).set(workout).await()
+        try {
+            db.collection("workouts")
+                .document(workoutId)
+                .set(workout)
+                .await()
         } catch (e: Exception) {
-
-        } as Unit
-
+            Log.e("RealWorkoutsRepository", "Failed to set workout $workoutId", e)
+        }
     }
 
     override suspend fun getUpcomingWorkouts(
@@ -87,18 +89,24 @@ class RealWorkoutsRepository : WorkoutsRepository {
         exerciseId: String,
         completed: Boolean
     ) {
-
         val workout = getWorkoutById(workoutId)
-        setWorkoutById(
-            workoutId, workout!!.copy(
-                exercises = workout.exercises.map { exercise ->
-                    if (exercise.id == exerciseId) {
-                        exercise.copy(completed = completed)
-                    } else {
-                        exercise
-                    }
+
+        if (workout == null) {
+            Log.e("RealWorkoutsRepository", "Workout not found: $workoutId")
+            return
+        }
+
+        val updatedWorkout = workout.copy(
+            exercises = workout.exercises.map { exercise ->
+                if (exercise.id == exerciseId) {
+                    exercise.copy(completed = completed)
+                } else {
+                    exercise
                 }
-            ))
+            }
+        )
+
+        setWorkoutById(workoutId, updatedWorkout)
     }
 
 
