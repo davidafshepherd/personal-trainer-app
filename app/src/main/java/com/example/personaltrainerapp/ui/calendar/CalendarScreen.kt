@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,20 +37,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.personaltrainerapp.data.calendar.AvailabilityStatus
+import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.common.AppHeader
+import com.example.personaltrainerapp.ui.workouts.WorkoutsViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
 @Composable
 fun CalendarScreen(
     traineeId: String = "demo-trainee",
-    forDisplay: Boolean,
-    onClick: (String, LocalDate, Int) -> Unit
+    forDisplay: Boolean = false,
+    onClick: (String, LocalDate, Int) -> Unit = { _, _, _ -> }
 ) {
     val viewModel = viewModel<CalendarViewModel>()
     val uiState by viewModel.uiState.collectAsState()
+
+    val workoutsViewModel = viewModel<WorkoutsViewModel>()
+    val workoutsUiState by workoutsViewModel.uiState.collectAsState()
 
     val today = LocalDate.now()
     val firstWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -71,21 +79,22 @@ fun CalendarScreen(
             startDate = weekDates.first(),
             endDate = weekDates.last()
         )
+
+        workoutsViewModel.loadWorkouts(traineeId)
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        if (!forDisplay){
+        if (!forDisplay) {
             AppHeader(title = "Calendar")
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(
                 onClick = {
                     if (canGoBack) {
@@ -152,9 +161,7 @@ fun CalendarScreen(
             items(hours.count()) { index ->
                 val hour = hours.first + index
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "%02d:00".format(hour),
                         modifier = Modifier.width(52.dp)
@@ -165,23 +172,32 @@ fun CalendarScreen(
                         val currentAvailability =
                             uiState.slots[key] ?: AvailabilityStatus.IDEAL
 
+                        val hasWorkout =
+                            hasWorkoutAtSlot(
+                                workouts = workoutsUiState.workouts,
+                                date = date,
+                                hour = hour
+                            )
+
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(3.dp)
                                 .aspectRatio(1f)
                                 .background(
-                                    color = colorFor(currentAvailability),
+                                    color = if (hasWorkout) {
+                                        workoutColor()
+                                    } else {
+                                        colorFor(currentAvailability)
+                                    },
                                     shape = RoundedCornerShape(6.dp)
                                 )
-                                .clickable {
+                                .clickable(enabled = !hasWorkout) {
                                     if (forDisplay) {
-                                        if (viewModel.checkAvailability(
-                                                date = date,
-                                                hour = hour)){
-                                            onClick(traineeId,date,hour)
+                                        if (viewModel.checkAvailability(date = date, hour = hour)) {
+                                            onClick(traineeId, date, hour)
                                         }
-                                    }else{
+                                    } else {
                                         viewModel.cycleAvailability(
                                             traineeId = traineeId,
                                             date = date,
@@ -204,8 +220,32 @@ fun CalendarScreen(
             LegendItem("Ideal", colorFor(AvailabilityStatus.IDEAL))
             LegendItem("Maybe", colorFor(AvailabilityStatus.MAYBE))
             LegendItem("Busy", colorFor(AvailabilityStatus.BUSY))
+            LegendItem("Workout", workoutColor())
         }
     }
+}
+
+private fun hasWorkoutAtSlot(
+    workouts: List<Workout>,
+    date: LocalDate,
+    hour: Int
+): Boolean {
+    val slotStart = date.atTime(hour, 0)
+    val slotEnd = slotStart.plusHours(1)
+
+    return workouts.any { workout ->
+        val workoutStart = workout.startTime.toLocalDateTime()
+        val workoutEnd = workout.endTime.toLocalDateTime()
+
+        workoutStart.isBefore(slotEnd) && workoutEnd.isAfter(slotStart)
+    }
+}
+
+private fun com.google.firebase.Timestamp.toLocalDateTime(): LocalDateTime {
+    return this.toDate()
+        .toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDateTime()
 }
 
 private fun colorFor(status: AvailabilityStatus): Color {
@@ -214,6 +254,10 @@ private fun colorFor(status: AvailabilityStatus): Color {
         AvailabilityStatus.MAYBE -> Color(0xFFFFF59D)
         AvailabilityStatus.BUSY -> Color(0xFFEF9A9A)
     }
+}
+
+private fun workoutColor(): Color {
+    return Color(0xFF90CAF9)
 }
 
 private fun formatDate(date: LocalDate): String {

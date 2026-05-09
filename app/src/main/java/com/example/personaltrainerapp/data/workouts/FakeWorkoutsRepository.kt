@@ -16,7 +16,7 @@ class FakeWorkoutsRepository : WorkoutsRepository {
         //sampleWorkout("6", "Workout 6", LocalDateTime.of(2026, 5, 21, 12, 0))
 
 
-    override suspend fun getAllWorkouts(trainerId:String): List<Workout>{
+    override suspend fun getAllWorkouts(): List<Workout>{
         return workouts
     }
 
