@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,7 +35,6 @@ import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.common.AppHeader
 import com.google.firebase.Timestamp
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -87,30 +88,20 @@ private fun WorkoutListScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        AppHeader(
-            title = "Upcoming Workouts"
-        )
+        AppHeader(title = "Upcoming Workouts")
 
         Spacer(modifier = Modifier.height(20.dp))
 
         when {
-            isLoading -> {
-                Text("Loading workouts...")
-            }
-
-            error != null -> {
-                Text(error)
-            }
-
-            workouts.isEmpty() -> {
-                Text("No upcoming workouts")
-            }
+            isLoading -> Text("Loading workouts...")
+            error != null -> Text(error)
+            workouts.isEmpty() -> Text("No upcoming workouts")
 
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    items(workouts.sortedBy { it.startTime }) { workout ->
+                    items(workouts.sortedBy { it.startTime.toDate().time }) { workout ->
                         WorkoutListItem(
                             workout = workout,
                             onClick = { onWorkoutClick(workout) }
@@ -147,15 +138,7 @@ private fun WorkoutListItem(
                 fontWeight = FontWeight.SemiBold
             )
 
-            Text(
-                text = workout.startTime
-                    .toDate()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime().format(
-                        DateTimeFormatter.ofPattern("d/M/yy · h:mm a")
-                    )
-            )
+            Text(text = workout.startTime.formatWorkoutTime())
         }
     }
 }
@@ -166,8 +149,7 @@ private fun WorkoutDetailScreen(
     onBack: () -> Unit,
     onExerciseToggle: (String) -> Unit
 ) {
-    val now = Timestamp.now()
-    val canCompleteExercises = now >= workout.startTime && now <= workout.endTime
+    val canCompleteExercises = isNowWithinWorkoutTime(workout)
 
     Column(
         modifier = Modifier
@@ -188,6 +170,19 @@ private fun WorkoutDetailScreen(
             }
         )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (workout.description.isNotBlank()) {
+            Text(
+                text = workout.description,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        WorkoutTypeBreakdown(workout = workout)
+
         Spacer(modifier = Modifier.height(16.dp))
 
         if (!canCompleteExercises) {
@@ -207,6 +202,49 @@ private fun WorkoutDetailScreen(
                     exercise = exercise,
                     canComplete = canCompleteExercises,
                     onToggle = { onExerciseToggle(exercise.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkoutTypeBreakdown(
+    workout: Workout
+) {
+    if (workout.exerciseTypeSplit.isEmpty()) return
+
+    val total = workout.exerciseTypeSplit.values.sum().takeIf { it > 0 } ?: return
+
+    Column {
+        Text(
+            text = "Workout breakdown",
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        workout.exerciseTypeSplit.forEach { (type, amount) ->
+            val fraction = amount.toFloat() / total.toFloat()
+            val percentage = (fraction * 100).toInt()
+
+            Column(
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Row {
+                    Text(
+                        text = type,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Text("$percentage%")
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                LinearProgressIndicator(
+                    progress = { fraction },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -239,12 +277,18 @@ private fun ExerciseListItem(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = "${exercise.name} (${exercise.muscleGroups})",
+                text = exercise.name,
                 fontWeight = FontWeight.SemiBold
             )
 
+            if (exercise.muscleGroups.isNotEmpty()) {
+                Text(
+                    text = exercise.muscleGroups.joinToString(", ")
+                )
+            }
+
             Text(
-                text = "${exercise.reps} reps (${exercise.estimatedMinutes} min)"
+                text = "${exercise.reps} reps (${exercise.estimatedMinutes * exercise.reps} min)"
             )
         }
 
@@ -261,5 +305,25 @@ private fun ExerciseListItem(
 }
 
 private fun estimatedWorkoutMinutes(workout: Workout): Int {
-    return workout.exercises.sumOf { it.estimatedMinutes }
+    return if (workout.estimatedMinutes > 0) {
+        workout.estimatedMinutes
+    } else {
+        workout.exercises.sumOf { it.estimatedMinutes }
+    }
+}
+
+private fun isNowWithinWorkoutTime(workout: Workout): Boolean {
+    val now = Timestamp.now().toDate().time
+    val start = workout.startTime.toDate().time
+    val end = workout.endTime.toDate().time
+
+    return now in start..end
+}
+
+private fun Timestamp.formatWorkoutTime(): String {
+    return this.toDate()
+        .toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDateTime()
+        .format(DateTimeFormatter.ofPattern("d/M/yy · h:mm a"))
 }
