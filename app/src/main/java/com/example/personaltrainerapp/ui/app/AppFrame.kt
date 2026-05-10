@@ -25,7 +25,6 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import com.example.personaltrainerapp.ui.home.TraineeHomeScreen
 import com.example.personaltrainerapp.ui.home.TrainerHomeScreen
-import java.time.LocalDate
 
 /**
  * Root scaffold for signed-in users.

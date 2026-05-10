@@ -42,7 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.personaltrainerapp.data.trainer.TrainerTags
+import com.example.personaltrainerapp.data.profile.ProfileTags
 import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.ui.common.AppHeader
 import com.example.personaltrainerapp.ui.profile.ProfileViewScreen
@@ -172,7 +172,7 @@ private fun TrainerSearchScreen(
     var searchText by remember { mutableStateOf("") }
     var selectedTags by remember { mutableStateOf(setOf<String>()) }
 
-    val tags = TrainerTags.all
+    val tags = ProfileTags.all
 
     val filteredTrainers = trainers.filter { trainer ->
         val matchesSearch =
