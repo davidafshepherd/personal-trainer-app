@@ -126,7 +126,8 @@ fun TraineesScreen(trainerId: String) {
             )
         }
 
-        composable("ScheduleWorkout/{id}") {
+        composable("ScheduleWorkout/{id}") { backStackEntry ->
+            val traineeId = backStackEntry.arguments?.getString("id")!!
             Log.d("Screen", "schedule")
             LaunchedEffect(libraryUiState.workouts) {
                 libraryViewModel.loadAll(trainerId)
@@ -139,7 +140,6 @@ fun TraineesScreen(trainerId: String) {
                 WorkoutList(
                     workouts = libraryUiState.workouts,
                     onClick = { workout ->
-                        val traineeId = traineeUiState.selectedTrainee?.uid
                         val slot = traineeUiState.tempSlot
                         if (traineeId != null && slot != null) {
                             libraryViewModel.scheduleWorkout(
