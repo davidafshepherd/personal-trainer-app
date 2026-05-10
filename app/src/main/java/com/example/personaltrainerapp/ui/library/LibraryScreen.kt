@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Save
@@ -413,7 +414,7 @@ fun NewExercise(
     val nameState = rememberTextFieldState()
     val descState = rememberTextFieldState()
     var timeState by remember { mutableStateOf("") }
-    val tags = remember { mutableListOf<String>() }
+    val tags = remember { mutableStateListOf<String>() }
     Column() {
         AppHeader(
             title = "New Exercise",
@@ -549,22 +550,26 @@ fun ExerciseList(
 @Composable
 fun WorkoutList(
     workouts: List<Workout>,
-    onClick: (Workout) -> Unit
+    onClick: (Workout) -> Unit,
+    canOpen: Boolean = true
 ) {
     LazyColumn() {
         items(workouts) { workout ->
             WorkoutListItem(
                 workout = workout,
-                onClick = { onClick(workout) }
+                onClick = { onClick(workout)
+                Log.d("Lists", workout.name)},
+                canOpen = canOpen
             )
         }
     }
 }
 
 @Composable
-private fun WorkoutListItem(
+fun WorkoutListItem(
     workout: Workout,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    canOpen: Boolean = true
 ) {
     ListItem(
         headlineContent = {
@@ -585,7 +590,15 @@ private fun WorkoutListItem(
                 workout.estimatedMinutes.toString() + " mins: " + workout.exerciseTypeSplit.map { (group, time) -> "$time% $group" }
             )
         },
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = Modifier.clickable(onClick = onClick),
+        trailingContent = {
+            if (canOpen){
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = "Open Workout"
+                )
+            }
+        }
     )
 }
 

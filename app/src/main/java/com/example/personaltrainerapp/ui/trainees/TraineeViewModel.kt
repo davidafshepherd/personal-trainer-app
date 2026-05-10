@@ -94,7 +94,8 @@ class TraineeViewModel(
             val trainee = repository.getTraineeById(traineeId)
 
             _uiState.value = _uiState.value.copy(
-                selectedTrainee = trainee
+                selectedTrainee = trainee,
+                isLoading = false
             )
         }
     }

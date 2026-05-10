@@ -316,7 +316,7 @@ fun ProfileScreen(user: UserProfile, modifier: Modifier = Modifier) {
  * Section header with an optional inline edit icon.
  */
 @Composable
-private fun ProfileSectionHeader(
+fun ProfileSectionHeader(
     title: String,
     onEdit: (() -> Unit)? = null
 ) {

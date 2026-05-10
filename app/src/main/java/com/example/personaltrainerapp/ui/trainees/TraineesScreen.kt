@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -51,9 +52,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.LineHeightStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -65,10 +63,13 @@ import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.calendar.CalendarScreen
 import com.example.personaltrainerapp.ui.common.AppHeader
+import com.example.personaltrainerapp.ui.library.LibraryUiState
 import com.example.personaltrainerapp.ui.library.ExerciseList
 import com.example.personaltrainerapp.ui.library.LibraryViewModel
 import com.example.personaltrainerapp.ui.library.WorkoutList
 import com.example.personaltrainerapp.ui.trainer.TrainerViewModel
+import com.example.personaltrainerapp.ui.library.WorkoutListItem
+import com.example.personaltrainerapp.ui.profile.ProfileSectionHeader
 import com.google.firebase.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -91,6 +92,8 @@ fun TraineesScreen(trainerId: String) {
     LaunchedEffect(traineeUiState.myTrainees, traineeUiState.allTrainees) {
         traineeViewModel.loadTrainees(trainerId)
     }
+    traineeViewModel.loadAvailability(trainerId)
+    Log.d("TraineeRepository", "Trainees Screen: " + traineeUiState.availability)
 
     NavHost(navController, startDestination = "Trainees") {
         composable("Trainees") {
@@ -100,28 +103,31 @@ fun TraineesScreen(trainerId: String) {
                 myTrainees = traineeUiState.myTrainees,
                 viewTrainee = { trainee ->
                     traineeViewModel.selectTrainee(trainee.uid)
-                    navController.navigate("selectedTrainee")
+                    navController.navigate("selectedTrainee/${trainee.uid}")
                 },
                 trainerId = trainerId,
                 navController = navController,
-                viewModel = trainerViewModel,
-                availability = traineeUiState.availability
+                viewModel = traineeViewModel,
+                uiState = traineeUiState
             )
         }
-        composable("selectedTrainee") {
-            traineeUiState.selectedTrainee?.let { trainee ->
-                DisplayTrainee(
-                    trainee = trainee,
-                    onBack = { navController.popBackStack() },
-                    navController = navController,
-                    traineeViewModel = traineeViewModel,
-                    libraryViewModel = libraryViewModel,
-                    workouts = libraryUiState.workouts.filter { it.traineeId == trainee.uid }
-                )
-            }
+        composable("selectedTrainee/{id}") { backStackEntry ->
+
+            val id = backStackEntry.arguments?.getString("id")!!
+            DisplayTrainee(
+                trainerId,
+                onBack = { navController.popBackStack() },
+                navController = navController,
+                traineeViewModel = traineeViewModel,
+                traineeUiState = traineeUiState,
+                libraryViewModel = libraryViewModel,
+                libraryUiState = libraryUiState,
+                traineeId = id
+            )
         }
 
-        composable("Schedule Workout") {
+        composable("ScheduleWorkout/{id}") {
+            Log.d("Screen", "schedule")
             LaunchedEffect(libraryUiState.workouts) {
                 libraryViewModel.loadAll(trainerId)
             }
@@ -144,22 +150,26 @@ fun TraineesScreen(trainerId: String) {
                             )
                             navController.popBackStack()
                         }
-                    }
+                    },
+                    canOpen = false
                 )
             }
         }
-        composable("Workout Dashboard") {
-            val workout = libraryUiState.selectedWorkout
-            val trainee = traineeUiState.selectedTrainee
-            if (workout != null && trainee != null) {
-                WorkoutDashboard(
-                    workout = workout,
-                    trainee = trainee,
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
-            }
+        composable("Workout Dashboard/{tId}/{wId}") { backStackEntry ->
+            val wId = backStackEntry.arguments?.getString("wId")!!
+            val tId = backStackEntry.arguments?.getString("tId")!!
+            Log.d("Screen", "dash")
+
+            WorkoutDashboard(
+                workoutId = wId,
+                traineeId = tId,
+                libraryUiState = libraryUiState,
+                traineeUiState = traineeUiState,
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+
         }
         composable("Requests") {
             LaunchedEffect(traineeUiState.myRequests) {
@@ -193,8 +203,8 @@ fun DisplayRequests(
             title = "Trainer Requests",
             onBack = onBack
         )
-        when{
-            isLoading ->{
+        when {
+            isLoading -> {
                 Log.d("RequestsTab", "checklo")
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -222,7 +232,10 @@ fun DisplayRequests(
                                                     trainerId = request.trainerId,
                                                     traineeId = request.traineeId
                                                 )
-                                                viewModel.updateRequestStatus(request.id, "ACCEPTED")
+                                                viewModel.updateRequestStatus(
+                                                    request.id,
+                                                    "ACCEPTED"
+                                                )
                                                 viewModel.loadRequests(trainerId = request.trainerId)
                                             }
                                         }
@@ -258,13 +271,20 @@ fun DisplayRequests(
 
 @Composable
 fun WorkoutDashboard(
-    workout: Workout,
-    trainee: UserProfile,
+    workoutId: String,
+    traineeId: String,
+    libraryUiState: LibraryUiState,
+    traineeUiState: TraineeUiState,
     onBack: () -> Unit
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val trainee = traineeUiState.allTrainees.firstOrNull { it.uid == traineeId }!!
+    val workout = libraryUiState.workouts.firstOrNull { it.id == workoutId }!!
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.background(MaterialTheme.colorScheme.background),
+
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         AppHeader(
             title = trainee.displayName + ": " + workout.name,
             onBack = onBack
@@ -274,16 +294,19 @@ fun WorkoutDashboard(
             workout.exercises.count { it.completed }.toFloat() / workout.exercises.size.toFloat()
         } else 0f
         Log.d("TraineeScreen", "progress: $progress")
-        Box(contentAlignment = Alignment.Center){
+        Box(contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.size(200.dp, 200.dp),
                 strokeWidth = 5.dp
             )
-            val progressText = if (progress.isNaN()) "0%" else (progress * 100).roundToInt().toString()+"%"
-            Text(text = progressText,
+            val progressText =
+                if (progress.isNaN()) "0%" else (progress * 100).roundToInt().toString() + "%"
+            Text(
+                text = progressText,
                 fontSize = 40.sp,
-             fontWeight = FontWeight.Bold)
+                fontWeight = FontWeight.Bold
+            )
         }
 
         Log.d("TraineeScreen", "circle")
@@ -314,70 +337,85 @@ fun WorkoutDashboard(
 
 @Composable
 private fun DisplayTrainee(
-    trainee: UserProfile,
+    trainerId: String,
     onBack: () -> Unit,
     navController: NavController,
     traineeViewModel: TraineeViewModel,
+    traineeUiState: TraineeUiState,
     libraryViewModel: LibraryViewModel,
-    workouts: List<Workout>
+    libraryUiState: LibraryUiState,
+    traineeId: String
 ) {
-    Log.d("TraineeScreen", "Working")
-    var canSeeCurrentWorkout by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(workouts) {
-        try {
-            val currentWorkout = workouts.firstOrNull { workout ->
+    val trainee = traineeUiState.allTrainees.firstOrNull { it.uid == traineeId }
+    libraryViewModel.loadAll(trainerId)
+    when {
+        traineeUiState.isLoading || libraryUiState.isLoading -> {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) { CircularProgressIndicator() }
+        }
 
-                workout.startTime.toInstant().isBefore(Timestamp.now().toInstant()) && workout.endTime.toInstant().isAfter(
-                    Timestamp.now().toInstant()
+        else -> {
+
+            val now = Timestamp.now()
+            var currentWorkout = libraryUiState.workouts.firstOrNull { workout ->
+                workout.startTime <= now &&
+                        workout.endTime >= now &&
+                        workout.traineeId == trainee!!.uid
+            }
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                //verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                AppHeader(
+                    title = trainee!!.displayName,
+                    onBack = onBack
+                )
+
+                ProfileSectionHeader("Exercise Tags")
+                LazyRow() {
+                    items(trainee.tags) { tag ->
+                        FilterChip(
+                            selected = true,
+                            label = { Text(tag) },
+                            onClick = {}
+                        )
+                    }
+                }
+
+                currentWorkout?.let {
+                    ProfileSectionHeader("Current Workout")
+                    WorkoutListItem(
+                        workout = currentWorkout,
+                        onClick = { navController.navigate("Workout Dashboard/${traineeId}/${currentWorkout.id}") }
+                    )
+                }
+
+                ProfileSectionHeader("Upcoming Workouts")
+                LazyColumn {
+                    items(libraryUiState.workouts.filter { it.traineeId == traineeId && currentWorkout?.id != it.id && it.startTime > now}) {
+                        WorkoutListItem(
+                            workout = it,
+                            onClick = {},
+                            canOpen = false
+                        )
+                    }
+                }
+
+                ProfileSectionHeader("Calendar")
+                CalendarScreen(
+                    traineeId = trainee.uid,
+                    forDisplay = true,
+                    onClick = { traineeId: String, date: LocalDate, hour: Int ->
+                        traineeViewModel.setTempSlot(traineeId, date, hour)
+                        navController.navigate("ScheduleWorkout/${traineeId}")
+                    }
                 )
             }
-            if (currentWorkout != null) {
-                libraryViewModel.selectWorkout(currentWorkout)
-                canSeeCurrentWorkout = true
-            } else {
-                canSeeCurrentWorkout = false
-            }
-        } catch (e: Exception) {
-            canSeeCurrentWorkout = false
         }
-    }
-
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        AppHeader(
-            title = trainee.displayName,
-            onBack = onBack
-        )
-
-        LazyRow() {
-            items(trainee.tags) { tag ->
-                FilterChip(
-                    selected = true,
-                    label = { Text(tag) },
-                    onClick = {}
-                )
-            }
-        }
-
-        Button(
-            onClick = {
-                navController.navigate("Workout Dashboard")
-            },
-            enabled = canSeeCurrentWorkout
-        ) {
-            Text("Current Workout")
-        }
-        CalendarScreen(
-            traineeId = trainee.uid,
-            forDisplay = true,
-            onClick = { traineeId: String, date: LocalDate, hour: Int ->
-                traineeViewModel.setTempSlot(traineeId, date, hour)
-                navController.navigate("Schedule Workout")
-            }
-        )
     }
 }
 
@@ -388,12 +426,23 @@ private fun MyTraineesScreen(
     myTrainees: List<UserProfile>,
     viewTrainee: (UserProfile) -> Unit,
     trainerId: String,
-    viewModel: TrainerViewModel,
+    viewModel: TraineeViewModel,
+    uiState: TraineeUiState,
     navController: NavController
 ) {
+    var input by remember { mutableIntStateOf(uiState.availability) }
+    var unlimited by remember { mutableStateOf(uiState.availability == -1) }
+    LaunchedEffect(uiState.availability) {
+        input = uiState.availability
+        unlimited = uiState.availability == -1
+    }
+    LaunchedEffect(uiState.myTrainees) {
+        viewModel.loadTrainees(trainerId)
+    }
+    Log.d("Test", "Availability: " + uiState.availability)
     var menuExpanded by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
-    var input by remember { mutableIntStateOf(0) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -430,43 +479,70 @@ private fun MyTraineesScreen(
             }
         )
         if (showDialog) {
-            AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text("Set Availability for Trainees") },
-
-                text = {
-                    OutlinedTextField(
-                        value = "",
-                        onValueChange = {
-                            if (it.all { c -> c.isDigit() }) {
-                                input = it.toInt()
+            when (isLoading) {
+                true -> Unit
+                false -> AlertDialog(
+                    onDismissRequest = { showDialog = false },
+                    title = { Text("Availability for Trainees") },
+                    text = {
+                        Column() {
+                            OutlinedTextField(
+                                value = if (input == 0 || input == -1) {
+                                    ""
+                                } else {
+                                    input.toString()
+                                },
+                                enabled = !unlimited,
+                                onValueChange = { value ->
+                                    if (!value.isEmpty() && value.all { c -> c.isDigit() }) {
+                                        input = value.toInt()
+                                    }
+                                    if (value.isEmpty()) {
+                                        input = 0
+                                    }
+                                },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number
+                                ),
+                                singleLine = true,
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Unlimited: ")
+                                Checkbox(
+                                    checked = unlimited,
+                                    onCheckedChange = {
+                                        unlimited = it
+                                    }
+                                )
                             }
-                        },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
-                        ),
-                        singleLine = true,
-                        placeholder = { Text("e.g. 5") }
-                    )
-                },
-
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            viewModel.setTrainerAvailability(trainerId, availability = input)
-                            showDialog = false
                         }
-                    ) {
-                        Text("Set")
-                    }
-                },
 
-                dismissButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("Cancel")
+                    },
+
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (unlimited) {
+                                    input = -1
+                                }
+                                viewModel.setTrainerAvailability(trainerId, input)
+                                showDialog = false
+                            }
+                        ) {
+                            Text("Set")
+                        }
+                    },
+
+                    dismissButton = {
+                        TextButton(onClick = { showDialog = false }) {
+                            Text("Cancel")
+                        }
                     }
-                }
-            )
+                )
+            }
         }
         when {
             isLoading -> {
@@ -474,7 +550,7 @@ private fun MyTraineesScreen(
             }
 
             myTrainees.isEmpty() -> {
-                Text("You have no trainees")
+                Text("You have no trainees.")
             }
 
             else -> {
