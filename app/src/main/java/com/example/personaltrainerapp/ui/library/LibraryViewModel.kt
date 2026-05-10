@@ -11,6 +11,7 @@ import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.data.workouts.WorkoutsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class LibraryUiState(
@@ -85,5 +86,16 @@ class LibraryViewModel(
             )
         }
         loadAll(trainerId)
+    }
+
+    fun removeWorkout(workoutId: String) {
+        viewModelScope.launch {
+            wRepository.decoupleWorkout(workoutId)
+            _uiState.value = _uiState.value.copy(
+                workouts =  _uiState.value.workouts.map { workout ->
+                    if (workout.id == workoutId) workout.copy(traineeId = "") else workout
+                }
+            )
+        }
     }
 }

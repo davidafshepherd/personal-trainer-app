@@ -71,6 +71,10 @@ class FakeWorkoutsRepository : WorkoutsRepository {
         TODO("Not yet implemented")
     }
 
+    override suspend fun decoupleWorkout(workoutId: String) {
+        TODO("Not yet implemented")
+    }
+
     private fun sampleWorkout(
         id: String,
         name: String,

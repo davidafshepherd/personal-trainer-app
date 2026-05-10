@@ -44,12 +44,6 @@ class TrainerViewModel(
     }
 
 
-    fun setTrainerAvailability(trainerId: String, availability:Int){
-        viewModelScope.launch {
-            repository.setTrainerAvailability(trainerId, availability)
-        }
-    }
-
     fun loadAssignedTrainer(traineeId: String) {
         viewModelScope.launch {
             val trainer = repository.getAssignedTrainer(traineeId)
@@ -70,13 +64,7 @@ class TrainerViewModel(
         }
     }
 
-    fun getTrainerById(trainerId: String){
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                selectedTrainer = repository.getTrainerById(trainerId)!!
-            )
-        }
-    }
+
     fun checkPendingRequest(
         traineeId: String,
         trainerId: String

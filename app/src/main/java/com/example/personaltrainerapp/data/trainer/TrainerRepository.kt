@@ -115,19 +115,5 @@ class TrainerRepository {
         }
     }
 
-    suspend fun setTrainerAvailability(trainerId: String, availability: Int):Boolean {
-        return try {
-            db.collection("users")
-                .document(trainerId)
-                .set(
-                    mapOf("availability" to availability),
-                    SetOptions.merge()
-                )
-                .await()
-            true
-        } catch (e: Exception) {
-            Log.e("TrainerRepository", "Failed to set Trainer Availability", e)
-            false
-        }
-    }
+
 }

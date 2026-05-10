@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,7 +20,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
@@ -73,7 +77,12 @@ import com.example.personaltrainerapp.ui.profile.ProfileSectionHeader
 import com.google.firebase.Timestamp
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import kotlin.collections.component1
+import kotlin.collections.component2
 import kotlin.math.roundToInt
+
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun TraineesScreen(trainerId: String) {
@@ -125,7 +134,6 @@ fun TraineesScreen(trainerId: String) {
                 traineeId = id
             )
         }
-
         composable("ScheduleWorkout/{id}") { backStackEntry ->
             val traineeId = backStackEntry.arguments?.getString("id")!!
             Log.d("Screen", "schedule")
@@ -368,7 +376,6 @@ private fun DisplayTrainee(
 
             Column(
                 modifier = Modifier.fillMaxSize(),
-                //verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 AppHeader(
                     title = trainee!!.displayName,
@@ -395,30 +402,69 @@ private fun DisplayTrainee(
                 }
 
                 ProfileSectionHeader("Upcoming Workouts")
-                LazyColumn {
-                    items(libraryUiState.workouts.filter { it.traineeId == traineeId && currentWorkout?.id != it.id && it.startTime > now}) {
-                        WorkoutListItem(
-                            workout = it,
-                            onClick = {},
-                            canOpen = false
+                val workouts = libraryUiState.workouts.filter { it.traineeId == traineeId && currentWorkout?.id != it.id && it.startTime > now}
+                LazyColumn (modifier = Modifier.height(((75 * workouts.size).coerceAtMost(115)).dp)){
+                    items(workouts) {
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = it.name,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
+                            leadingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.FitnessCenter,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    "${it.startTime.formatDateTime()} - ${it.endTime.formatDateTime(true)}"
+                                )
+                            },
+                            trailingContent = {
+                                IconButton(
+                                    onClick = { libraryViewModel.removeWorkout(it.id) }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Cancel,
+                                        contentDescription = "Remove Workout from Calendar"
+                                    )
+                                }
+                            }
                         )
                     }
                 }
 
                 ProfileSectionHeader("Calendar")
-                CalendarScreen(
-                    traineeId = trainee.uid,
-                    forDisplay = true,
-                    onClick = { traineeId: String, date: LocalDate, hour: Int ->
-                        traineeViewModel.setTempSlot(traineeId, date, hour)
-                        navController.navigate("ScheduleWorkout/${traineeId}")
-                    }
-                )
+                Column(modifier = Modifier.height(1000.dp)) {
+                    CalendarScreen(
+                        traineeId = trainee.uid,
+                        forDisplay = true,
+                        onClick = { traineeId: String, date: LocalDate, hour: Int ->
+                            traineeViewModel.setTempSlot(traineeId, date, hour)
+                            navController.navigate("ScheduleWorkout/${traineeId}")
+                        }
+                    )
+                }
+
             }
         }
     }
 }
-
+private fun Timestamp.formatDateTime(justHour: Boolean = false): String {
+    var pattern =  "d/M/yy · h:mm a"
+    if (justHour){
+        pattern =  "h:mm a"
+    }
+    return this.toDate()
+        .toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDateTime()
+        .format(DateTimeFormatter.ofPattern(pattern))
+}
 
 @Composable
 private fun MyTraineesScreen(

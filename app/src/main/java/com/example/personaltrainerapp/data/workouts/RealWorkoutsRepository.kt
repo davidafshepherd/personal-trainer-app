@@ -45,6 +45,17 @@ class RealWorkoutsRepository : WorkoutsRepository {
         }
     }
 
+    override suspend fun decoupleWorkout(workoutId: String) {
+        try {
+            db.collection("workouts")
+                .document(workoutId)
+                .update("traineeId", "")
+                .await()
+        } catch (e: Exception) {
+            Log.e("Workout Repository", "Failed to remove workout from trainee")
+        }
+    }
+
 
     override suspend fun getWorkoutById(workoutId: String): Workout? {
         return try {
@@ -69,6 +80,7 @@ class RealWorkoutsRepository : WorkoutsRepository {
         } catch (e: Exception) {
             Log.e("RealWorkoutsRepository", "Failed to set workout $workoutId", e)
         }
+
     }
 
     override suspend fun getUpcomingWorkouts(
@@ -93,6 +105,7 @@ class RealWorkoutsRepository : WorkoutsRepository {
         exerciseId: String,
         completed: Boolean
     ) {
+
         val workout = getWorkoutById(workoutId)
 
         if (workout == null) {

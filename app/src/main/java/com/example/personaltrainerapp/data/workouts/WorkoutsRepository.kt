@@ -18,4 +18,5 @@ interface WorkoutsRepository {
     suspend fun scheduleWorkout(workout: Workout, traineeId: String, slot: AvailabilitySlot)
     suspend fun saveNewWorkout(workout: Workout)
     suspend fun getTrainersWorkouts(trainerId: String): List<Workout>
+    suspend fun decoupleWorkout(workoutId: String)
 }
