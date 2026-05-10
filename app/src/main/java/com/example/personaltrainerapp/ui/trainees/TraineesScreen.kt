@@ -73,10 +73,7 @@ import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
 @Composable
-@Preview(showBackground = true)
-fun TraineesScreen(
-    trainerId: String = "demo-user"
-) {
+fun TraineesScreen(trainerId: String) {
 
     val navController = rememberNavController()
 
