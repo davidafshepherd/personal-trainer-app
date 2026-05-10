@@ -84,9 +84,6 @@ class LibraryViewModel(
                 slot
             )
         }
-
         loadAll(trainerId)
-        Log.d("SchedulingA", slot.toString())
-
     }
 }

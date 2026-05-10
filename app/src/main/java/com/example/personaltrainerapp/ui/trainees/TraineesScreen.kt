@@ -1,6 +1,7 @@
 package com.example.personaltrainerapp.ui.trainees
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,6 +51,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -60,10 +65,13 @@ import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.calendar.CalendarScreen
 import com.example.personaltrainerapp.ui.common.AppHeader
+import com.example.personaltrainerapp.ui.library.ExerciseList
 import com.example.personaltrainerapp.ui.library.LibraryViewModel
 import com.example.personaltrainerapp.ui.library.WorkoutList
+import com.example.personaltrainerapp.ui.trainer.TrainerViewModel
 import com.google.firebase.Timestamp
 import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
 @Composable
@@ -82,8 +90,6 @@ fun TraineesScreen(
     LaunchedEffect(traineeUiState.myTrainees, traineeUiState.allTrainees) {
         traineeViewModel.loadTrainees(trainerId)
     }
-    traineeViewModel.loadAvailability(trainerId)
-    Log.d("TraineeRepository", "Trainees Screen: "+traineeUiState.availability)
 
     NavHost(navController, startDestination = "Trainees") {
         composable("Trainees") {
@@ -255,10 +261,9 @@ fun WorkoutDashboard(
     trainee: UserProfile,
     onBack: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.background(MaterialTheme.colorScheme.background),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AppHeader(
             title = trainee.displayName + ": " + workout.name,
             onBack = onBack
@@ -274,13 +279,10 @@ fun WorkoutDashboard(
                 modifier = Modifier.size(200.dp, 200.dp),
                 strokeWidth = 5.dp
             )
-            val progressText =
-                if (progress.isNaN()) "0%" else (progress * 100).roundToInt().toString() + "%"
-            Text(
-                text = progressText,
+            val progressText = if (progress.isNaN()) "0%" else (progress * 100).roundToInt().toString()+"%"
+            Text(text = progressText,
                 fontSize = 40.sp,
-                fontWeight = FontWeight.Bold
-            )
+             fontWeight = FontWeight.Bold)
         }
 
         Log.d("TraineeScreen", "circle")
@@ -289,7 +291,7 @@ fun WorkoutDashboard(
                 ListItem(
                     modifier = Modifier.alpha(if (it.completed) 0.5F else 1F),
                     headlineContent = { Text(it.name) },
-                    supportingContent = { Text("" + it.muscleGroups) },
+                    supportingContent = { Text(it.muscleGroups.toString()) },
                     trailingContent = {
                         Column {
                             Text("Reps: " + it.reps)
@@ -320,13 +322,12 @@ private fun DisplayTrainee(
 ) {
     Log.d("TraineeScreen", "Working")
     var canSeeCurrentWorkout by remember { mutableStateOf(false) }
-
+    
     LaunchedEffect(workouts) {
         try {
             val currentWorkout = workouts.firstOrNull { workout ->
 
-                workout.startTime.toInstant()
-                    .isBefore(Timestamp.now().toInstant()) && workout.endTime.toInstant().isAfter(
+                workout.startTime.toInstant().isBefore(Timestamp.now().toInstant()) && workout.endTime.toInstant().isAfter(
                     Timestamp.now().toInstant()
                 )
             }
@@ -359,18 +360,15 @@ private fun DisplayTrainee(
                 )
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically){
-            Button(
-                onClick = {
-                    navController.navigate("Workout Dashboard")
-                },
-                enabled = canSeeCurrentWorkout,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Current Workout")
-            }
-        }
 
+        Button(
+            onClick = {
+                navController.navigate("Workout Dashboard")
+            },
+            enabled = canSeeCurrentWorkout
+        ) {
+            Text("Current Workout")
+        }
         CalendarScreen(
             traineeId = trainee.uid,
             forDisplay = true,
@@ -389,16 +387,12 @@ private fun MyTraineesScreen(
     myTrainees: List<UserProfile>,
     viewTrainee: (UserProfile) -> Unit,
     trainerId: String,
-    viewModel: TraineeViewModel,
-    availability: Int,
+    viewModel: TrainerViewModel,
     navController: NavController
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
-    var input by remember { mutableIntStateOf(availability) }
-    LaunchedEffect(input) { }
-    Log.d("TraineeRepository", "My Trainees Screen:"+input.toString())
-
+    var input by remember { mutableIntStateOf(0) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -434,54 +428,44 @@ private fun MyTraineesScreen(
                 }
             }
         )
-        if (showDialog ) {
-            when (isLoading){
-                true -> Unit
-                false -> AlertDialog(
-                    onDismissRequest = { showDialog = false },
-                    title = { Text("Availability for Trainees") },
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Set Availability for Trainees") },
 
-                    text = {
-                        OutlinedTextField(
-                            value = if (input == 0){
-                                ""
-                            } else {
-                                input.toString()
-                            },
-                            onValueChange = { value ->
-                                if (!value.isEmpty() && value.all { c -> c.isDigit() }) {
-                                    input = value.toInt()
-                                }
-                                if (value.isEmpty()){
-                                    input = 0
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number
-                            ),
-                            singleLine = true,
-                        )
-                    },
-
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                viewModel.setTrainerAvailability(trainerId, input)
-                                showDialog = false
+                text = {
+                    OutlinedTextField(
+                        value = "",
+                        onValueChange = {
+                            if (it.all { c -> c.isDigit() }) {
+                                input = it.toInt()
                             }
-                        ) {
-                            Text("Set")
-                        }
-                    },
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
+                        singleLine = true,
+                        placeholder = { Text("e.g. 5") }
+                    )
+                },
 
-                    dismissButton = {
-                        TextButton(onClick = { showDialog = false }) {
-                            Text("Cancel")
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.setTrainerAvailability(trainerId, availability = input)
+                            showDialog = false
                         }
+                    ) {
+                        Text("Set")
                     }
-                )
-            }
+                },
 
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
         when {
             isLoading -> {
@@ -497,10 +481,9 @@ private fun MyTraineesScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(myTrainees) { trainee ->
-                        ListItem(
-                            headlineContent = { Text(trainee.displayName) },
-                            supportingContent = { Text(trainee.tags.toString()) },
-                            modifier = Modifier.clickable(onClick = { viewTrainee(trainee) })
+                        TraineeListItem(
+                            trainee = trainee,
+                            onClick = { viewTrainee(trainee) }
                         )
                     }
                 }

@@ -60,13 +60,15 @@ class RealWorkoutsRepository : WorkoutsRepository {
         }
     }
 
-    suspend fun setWorkoutById(workoutId: String, workout: Workout) :Int{
-        return try {
-            db.collection("workouts").document(workoutId).set(workout).await()
+    suspend fun setWorkoutById(workoutId: String, workout: Workout) {
+        try {
+            db.collection("workouts")
+                .document(workoutId)
+                .set(workout)
+                .await()
         } catch (e: Exception) {
-            Log.d("WorkoutRepository", "Unable to set workout")
+            Log.e("RealWorkoutsRepository", "Failed to set workout $workoutId", e)
         }
-
     }
 
     override suspend fun getUpcomingWorkouts(
@@ -91,18 +93,24 @@ class RealWorkoutsRepository : WorkoutsRepository {
         exerciseId: String,
         completed: Boolean
     ) {
-
         val workout = getWorkoutById(workoutId)
-        setWorkoutById(
-            workoutId, workout!!.copy(
-                exercises = workout.exercises.map { exercise ->
-                    if (exercise.id == exerciseId) {
-                        exercise.copy(completed = completed)
-                    } else {
-                        exercise
-                    }
+
+        if (workout == null) {
+            Log.e("RealWorkoutsRepository", "Workout not found: $workoutId")
+            return
+        }
+
+        val updatedWorkout = workout.copy(
+            exercises = workout.exercises.map { exercise ->
+                if (exercise.id == exerciseId) {
+                    exercise.copy(completed = completed)
+                } else {
+                    exercise
                 }
-            ))
+            }
+        )
+
+        setWorkoutById(workoutId, updatedWorkout)
     }
 
 
