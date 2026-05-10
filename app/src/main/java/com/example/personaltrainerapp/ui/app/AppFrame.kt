@@ -24,6 +24,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import com.example.personaltrainerapp.ui.home.TraineeHomeScreen
+import com.example.personaltrainerapp.ui.home.TrainerHomeScreen
 import java.time.LocalDate
 
 /**
@@ -69,7 +70,14 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
         entry<TraineeTrainerRoute> { TrainerScreen(traineeId = user.uid) }
         entry<TraineeProfileRoute> { ProfileScreen(user = user) }
 
-        entry<TrainerHomeRoute> { BlankScreen("Home") }
+        entry<TrainerHomeRoute> { TrainerHomeScreen(user = user,
+            onManageTraineesClick = {
+                navigator.navigate(TrainerTraineesRoute)
+            },
+            onViewLibraryClick = {
+                navigator.navigate(TrainerLibraryRoute)
+            }
+        ) }
         entry<TrainerTraineesRoute> { TraineesScreen(trainerId = user.uid) }
         entry<TrainerLibraryRoute> { LibraryScreen(trainerId = user.uid) }
         entry<TrainerProfileRoute> { ProfileScreen(user = user) }

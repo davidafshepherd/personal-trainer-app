@@ -75,9 +75,7 @@ import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
 @Composable
-fun TraineesScreen(
-    trainerId: String = "demo-user"
-) {
+fun TraineesScreen(trainerId: String) {
 
     val navController = rememberNavController()
 
@@ -86,6 +84,9 @@ fun TraineesScreen(
 
     val libraryViewModel = remember { LibraryViewModel() }
     val libraryUiState by libraryViewModel.uiState.collectAsState()
+
+    val trainerViewModel = remember { TrainerViewModel() }
+    val trainerUiState by trainerViewModel.uiState.collectAsState()
 
     LaunchedEffect(traineeUiState.myTrainees, traineeUiState.allTrainees) {
         traineeViewModel.loadTrainees(trainerId)
@@ -103,7 +104,7 @@ fun TraineesScreen(
                 },
                 trainerId = trainerId,
                 navController = navController,
-                viewModel = traineeViewModel,
+                viewModel = trainerViewModel,
                 availability = traineeUiState.availability
             )
         }
@@ -273,7 +274,7 @@ fun WorkoutDashboard(
             workout.exercises.count { it.completed }.toFloat() / workout.exercises.size.toFloat()
         } else 0f
         Log.d("TraineeScreen", "progress: $progress")
-        Box(contentAlignment = Alignment.Center) {
+        Box(contentAlignment = Alignment.Center){
             CircularProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.size(200.dp, 200.dp),
