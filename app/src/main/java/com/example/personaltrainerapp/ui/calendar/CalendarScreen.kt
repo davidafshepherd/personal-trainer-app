@@ -46,7 +46,7 @@ import java.time.temporal.TemporalAdjusters
 fun CalendarScreen(
     traineeId: String = "demo-trainee",
     forDisplay: Boolean,
-    onClick: (String, LocalDate, Int) -> Unit
+    onClick: ((String, LocalDate, Int) -> Unit)?
 ) {
     val viewModel = viewModel<CalendarViewModel>()
     val uiState by viewModel.uiState.collectAsState()
@@ -179,7 +179,7 @@ fun CalendarScreen(
                                         if (viewModel.checkAvailability(
                                                 date = date,
                                                 hour = hour)){
-                                            onClick(traineeId,date,hour)
+                                            onClick!!(traineeId,date,hour)
                                         }
                                     }else{
                                         viewModel.cycleAvailability(

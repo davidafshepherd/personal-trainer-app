@@ -10,6 +10,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.util.Date
 import kotlin.math.roundToInt
 
@@ -17,30 +18,33 @@ class RealWorkoutsRepository : WorkoutsRepository {
 
     private val db = FirebaseFirestore.getInstance()
 
-    override suspend fun getAllWorkouts(trainerId: String): List<Workout> {
+    override suspend fun getAllWorkouts(): List<Workout> {
         return try {
             val snapshot = db.collection("workouts")
-                //.whereEqualTo("trainerId", trainerId)
                 .get()
                 .await()
-            Log.d("Repository", "" + snapshot.map { it.id })
-
-            snapshot.documents.forEach {
-                val obj = it.toObject(Workout::class.java)
-
-                Log.d(
-                    "Firestore",
-                    "id=${it.id}, success=${obj != null}, data=${it.data}"
-                )
-            }
-            snapshot.documents.map { doc ->
+            snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Workout::class.java)
-
             }
         } catch (e: Exception) {
             emptyList()
-        } as List<Workout>
+        }
     }
+
+    override suspend fun getTrainersWorkouts(trainerId: String): List<Workout> {
+        return try {
+            val snapshot = db.collection("workouts")
+                .whereEqualTo("trainerId", trainerId)
+                .get()
+                .await()
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Workout::class.java)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
 
     override suspend fun getWorkoutById(workoutId: String): Workout? {
         return try {
@@ -56,12 +60,12 @@ class RealWorkoutsRepository : WorkoutsRepository {
         }
     }
 
-    suspend fun setWorkoutById(workoutId: String, workout: Workout) {
+    suspend fun setWorkoutById(workoutId: String, workout: Workout) :Int{
         return try {
             db.collection("workouts").document(workoutId).set(workout).await()
         } catch (e: Exception) {
-
-        } as Unit
+            Log.d("WorkoutRepository", "Unable to set workout")
+        }
 
     }
 
@@ -107,17 +111,22 @@ class RealWorkoutsRepository : WorkoutsRepository {
         traineeId: String,
         slot: AvailabilitySlot
     ) {
-        setWorkoutById(
-            workout.id, workout.copy(
-                traineeId = traineeId,
-                startTime = Timestamp.now(),
-                endTime = Timestamp(
-                    Date.from(
-                        Instant.now().plus(Duration.ofMinutes(workout.estimatedMinutes.toLong()))
-                    )
+        val startTime = Timestamp(
+            Date.from(
+                slot.date.atTime(slot.hour,
+                    0).atZone(ZoneId.systemDefault()).toInstant())
+        )
+        try {
+            setWorkoutById(
+                workout.id, workout.copy(
+                    traineeId = traineeId,
+                    startTime = startTime,
+                    endTime = Timestamp(startTime.toInstant().plusSeconds((workout.estimatedMinutes*60).toLong()))
                 )
             )
-        )
+        } catch (e: Exception){
+            Log.d("RealWorkoutsRepository", "Unable to schedule workout")
+        }
     }
 
     override suspend fun saveNewWorkout(workout: Workout) {

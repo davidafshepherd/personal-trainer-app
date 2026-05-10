@@ -1,11 +1,13 @@
 package com.example.personaltrainerapp.ui.trainees
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import com.example.personaltrainerapp.data.trainees.FakeTraineeRepository
 import com.example.personaltrainerapp.data.trainees.TraineeRepository
+import com.example.personaltrainerapp.data.trainer.TrainerRequest
 import com.example.personaltrainerapp.data.user.UserProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,10 +16,12 @@ import java.time.LocalDate
 
 data class TraineeUiState(
     val isLoading: Boolean = true,
-    val trainees: List<UserProfile> = emptyList(),
+    val allTrainees: List<UserProfile> = emptyList(),
     val myTrainees: List<UserProfile> = emptyList(),
+    val myRequests: List<TrainerRequest> = emptyList(),
     val selectedTrainee: UserProfile? = null,
-    val tempSlot: AvailabilitySlot? = null
+    val tempSlot: AvailabilitySlot? = null,
+    val availability: Int = 0
 )
 
 class TraineeViewModel(
@@ -33,7 +37,8 @@ class TraineeViewModel(
             val myTrainees = trainees.filter { trainee -> trainee.trainerId == trainerId}
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                myTrainees = myTrainees
+                myTrainees = myTrainees,
+                allTrainees = trainees
             )
         }
     }
@@ -43,14 +48,43 @@ class TraineeViewModel(
             _uiState.value = _uiState.value.copy(
                 tempSlot = AvailabilitySlot(traineeId = traineeId, date = date, hour = hour)
             )
+            Log.d("Scheduling", _uiState.value.tempSlot.toString())
         }
     }
-    fun addTrainee(trainerId: String, trainee: UserProfile) {
+
+    fun assignTrainee(trainerId: String, traineeId: String) {
         viewModelScope.launch {
-            repository.updateTrainer(trainee.uid, trainerId)
+            repository.updateTrainer(traineeId, trainerId)
+        }
+    }
+
+    fun updateRequestStatus(requestId: String, status: String){
+        viewModelScope.launch {
+            repository.updateRequestStatus(requestId, status)
+        }
+    }
+    fun setTrainerAvailability(trainerId: String, availability: Int){
+        viewModelScope.launch {
+            repository.setTrainerAvailability(trainerId, availability)
+        }
+    }
+
+    fun loadRequests(trainerId: String){
+        viewModelScope.launch {
+            val requests = repository.getRequests(trainerId)
+            _uiState.value = _uiState.value.copy(
+                myRequests = requests
+            )
+        }
+    }
+
+    fun loadAvailability(trainerId: String){
+        viewModelScope.launch {
+            val availability = repository.getTrainerAvailability(trainerId)
+            Log.d("TraineeRepository", availability.toString()+"Ee")
 
             _uiState.value = _uiState.value.copy(
-                myTrainees = _uiState.value.myTrainees + trainee
+                availability = availability
             )
         }
     }

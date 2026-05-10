@@ -23,7 +23,6 @@ import com.example.personaltrainerapp.ui.workouts.WorkoutsScreen
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
-import java.time.LocalDate
 
 /**
  * Root scaffold for signed-in users.
@@ -53,14 +52,14 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
     // Maps each route to its screen composable
     val entryProvider = entryProvider {
         entry<TraineeHomeRoute> { BlankScreen("Home") }
-        entry<TraineeCalendarRoute> { CalendarScreen(traineeId = user.uid, false,
-            {} as (String, LocalDate, Int) -> Unit) }
+        entry<TraineeCalendarRoute> { CalendarScreen(traineeId = user.uid, false, null)
+             }
         entry<TraineeWorkoutsRoute> { WorkoutsScreen(traineeId = user.uid) }
         entry<TraineeTrainerRoute> { TrainerScreen(traineeId = user.uid) }
         entry<TraineeProfileRoute> { ProfileScreen(user = user) }
 
         entry<TrainerHomeRoute> { BlankScreen("Home") }
-        entry<TrainerTraineesRoute> { TraineesScreen() }
+        entry<TrainerTraineesRoute> { TraineesScreen(trainerId = user.uid) }
         entry<TrainerLibraryRoute> { LibraryScreen(trainerId = user.uid) }
         entry<TrainerProfileRoute> { ProfileScreen(user = user) }
     }

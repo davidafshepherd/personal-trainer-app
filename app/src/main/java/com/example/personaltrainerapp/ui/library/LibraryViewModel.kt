@@ -31,8 +31,7 @@ class LibraryViewModel(
 
     fun loadAll(trainerId: String) {
         viewModelScope.launch {
-            val workouts = wRepository.getAllWorkouts(trainerId)
-            Log.d("CheckListR", ""+workouts.map { it.name })
+            val workouts = wRepository.getTrainersWorkouts(trainerId)
 
             val exercises = eRepository.getAllExercises(trainerId)
             _uiState.value = _uiState.value.copy(
@@ -85,6 +84,9 @@ class LibraryViewModel(
                 slot
             )
         }
+
         loadAll(trainerId)
+        Log.d("SchedulingA", slot.toString())
+
     }
 }

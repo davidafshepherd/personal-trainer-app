@@ -81,9 +81,6 @@ fun LibraryScreen(
 
     LaunchedEffect(uiState.workouts, uiState.exercises) {
         viewModel.loadAll(trainerId)
-        Log.d("CheckListWW", ""+uiState.workouts.map { it.name })
-        Log.d("CheckListEE", ""+uiState.exercises.map { it.name })
-
     }
     Column(
         modifier = Modifier
@@ -146,9 +143,6 @@ fun LibraryTabs(
     viewModel: LibraryViewModel
 ) {
     var selectedDestination by rememberSaveable { mutableIntStateOf(startDestination) }
-    Log.d("CheckListW", ""+workouts.map { it.name })
-    Log.d("CheckListE", ""+exercises.map { it.name })
-
 
     Column(
         modifier = Modifier
@@ -212,7 +206,6 @@ fun WorkoutsLibrary(
     viewModel: LibraryViewModel,
     navController: NavController
 ) {
-    Log.d("CheckList", ""+workouts.map { it.name })
 
     when {
         isLoading -> {
