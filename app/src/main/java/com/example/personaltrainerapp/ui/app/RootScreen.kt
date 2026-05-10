@@ -1,8 +1,7 @@
-package com.example.personaltrainerapp.ui
+package com.example.personaltrainerapp.ui.app
 
 import androidx.compose.runtime.*
 import com.example.personaltrainerapp.data.user.UserProfile
-import com.example.personaltrainerapp.ui.app.AppFrame
 import com.example.personaltrainerapp.ui.auth.AuthScreen
 import com.example.personaltrainerapp.ui.common.LoadingScreen
 import com.google.firebase.auth.FirebaseAuth
