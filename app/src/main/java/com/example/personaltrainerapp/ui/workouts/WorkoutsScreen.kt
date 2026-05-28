@@ -17,21 +17,30 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.personaltrainerapp.data.sensors.ExerciseMotionTracker
 import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.common.AppHeader
@@ -156,6 +165,7 @@ private fun WorkoutDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         AppHeader(
@@ -259,50 +269,161 @@ private fun ExerciseListItem(
     canComplete: Boolean,
     onToggle: () -> Unit
 ) {
+    val context = LocalContext.current
     val itemAlpha = if (canComplete) 1f else 0.45f
 
-    Row(
+    var isTracking by remember(exercise.id) { mutableStateOf(false) }
+    var sensorUnavailable by remember(exercise.id) { mutableStateOf(false) }
+    var completedTrackedReps by remember(exercise.id) { mutableIntStateOf(0) }
+    var requiredTrackedReps by remember(exercise.id) { mutableIntStateOf(exercise.reps) }
+    var currentRepMovementRatio by remember(exercise.id) { mutableStateOf(0f) }
+
+    val estimatedMillisPerRep = maxOf(
+        1L,
+        exercise.estimatedMinutes * 60_000L
+    )
+
+    val tracker = remember(exercise.id) {
+        ExerciseMotionTracker(
+            context = context.applicationContext,
+            requiredReps = exercise.reps,
+            estimatedMillisPerRep = estimatedMillisPerRep,
+            debugTimeScale = 0.05f,
+            requiredMovementRatio = 0.5f,
+            onProgressChanged = { completed, required, ratio ->
+                completedTrackedReps = completed
+                requiredTrackedReps = required
+                currentRepMovementRatio = ratio
+            },
+            onCompleted = {
+                isTracking = false
+
+                if (!exercise.completed && canComplete) {
+                    onToggle()
+                }
+            }
+        )
+    }
+
+    DisposableEffect(exercise.id) {
+        onDispose {
+            tracker.stop()
+        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(itemAlpha),
-        verticalAlignment = Alignment.CenterVertically
+            .alpha(itemAlpha)
     ) {
-        Icon(
-            imageVector = Icons.Default.FitnessCenter,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp)
-        )
-
-        Spacer(modifier = Modifier.width(14.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
+        Row(
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = exercise.name,
-                fontWeight = FontWeight.SemiBold
+            Icon(
+                imageVector = Icons.Default.FitnessCenter,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
             )
 
-            if (exercise.muscleGroups.isNotEmpty()) {
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
-                    text = exercise.muscleGroups.joinToString(", ")
+                    text = exercise.name,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                if (exercise.muscleGroups.isNotEmpty()) {
+                    Text(text = exercise.muscleGroups.joinToString(", "))
+                }
+
+                Text(
+                    text = "${exercise.reps} reps (${exercise.estimatedMinutes * exercise.reps} min)"
                 )
             }
 
-            Text(
-                text = "${exercise.reps} reps (${exercise.estimatedMinutes * exercise.reps} min)"
+            Checkbox(
+                checked = exercise.completed,
+                onCheckedChange = {
+                    if (canComplete) {
+                        tracker.stop()
+                        isTracking = false
+                        onToggle()
+                    }
+                },
+                enabled = canComplete
             )
         }
 
-        Checkbox(
-            checked = exercise.completed,
-            onCheckedChange = {
-                if (canComplete) {
-                    onToggle()
+        if (canComplete && !exercise.completed) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isTracking) {
+                    OutlinedButton(
+                        onClick = {
+                            tracker.stop()
+                            isTracking = false
+                        }
+                    ) {
+                        Text("Stop tracking")
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            sensorUnavailable = false
+                            currentRepMovementRatio = 0f
+
+                            val started = tracker.start()
+
+                            if (started) {
+                                isTracking = true
+                            } else {
+                                sensorUnavailable = true
+                            }
+                        }
+                    ) {
+                        Text("Start sensor tracking")
+                    }
                 }
-            },
-            enabled = canComplete
-        )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                if (isTracking) {
+                    Text("$completedTrackedReps/$requiredTrackedReps reps")
+                }
+            }
+
+            if (isTracking) {
+                Spacer(modifier = Modifier.height(6.dp))
+
+                LinearProgressIndicator(
+                    progress = { currentRepMovementRatio },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Current rep movement: ${(currentRepMovementRatio * 100).toInt()}%",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            if (sensorUnavailable) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Accelerometer unavailable. Use the checkbox instead.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
     }
 }
 

@@ -76,43 +76,42 @@ class WorkoutsViewModel(
         val currentState = _uiState.value
 
         val workout = currentState.workouts.firstOrNull { it.id == workoutId }
+            ?: currentState.selectedWorkout
             ?: return
 
         val exercise = workout.exercises.firstOrNull { it.id == exerciseId }
             ?: return
 
-        val newCompleteValue = !exercise.completed
+        val newCompletedValue = !exercise.completed
+
+        val updatedWorkout = workout.copy(
+            exercises = workout.exercises.map { existingExercise ->
+                if (existingExercise.id == exerciseId) {
+                    existingExercise.copy(completed = newCompletedValue)
+                } else {
+                    existingExercise
+                }
+            }
+        )
+
+        val updatedWorkouts = currentState.workouts.map { existingWorkout ->
+            if (existingWorkout.id == workoutId) {
+                updatedWorkout
+            } else {
+                existingWorkout
+            }
+        }
+
+        _uiState.value = currentState.copy(
+            workouts = updatedWorkouts,
+            selectedWorkout = updatedWorkout
+        )
 
         viewModelScope.launch {
             repository.markExerciseComplete(
                 workoutId = workoutId,
                 exerciseId = exerciseId,
-                completed = newCompleteValue
-            )
-
-            val updatedWorkouts = currentState.workouts.map { existingWorkout ->
-                if (existingWorkout.id != workoutId) {
-                    existingWorkout
-                } else {
-                    existingWorkout.copy(
-                        exercises = existingWorkout.exercises.map { existingExercise ->
-                            if (existingExercise.id == exerciseId) {
-                                existingExercise.copy(completed = newCompleteValue)
-                            } else {
-                                existingExercise
-                            }
-                        }
-                    )
-                }
-            }
-
-            val updatedSelectedWorkout = updatedWorkouts.firstOrNull {
-                it.id == currentState.selectedWorkout?.id
-            }
-
-            _uiState.value = currentState.copy(
-                workouts = updatedWorkouts,
-                selectedWorkout = updatedSelectedWorkout
+                completed = newCompletedValue
             )
         }
     }
