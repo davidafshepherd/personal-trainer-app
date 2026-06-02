@@ -1,5 +1,6 @@
 package com.example.personaltrainerapp.ui.library
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -42,6 +43,7 @@ class LibraryViewModel(
             )
         }
     }
+
 
     fun selectWorkout(workout: Workout) {
         viewModelScope.launch {

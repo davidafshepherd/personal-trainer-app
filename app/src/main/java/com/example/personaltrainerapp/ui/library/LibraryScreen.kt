@@ -1,6 +1,10 @@
 package com.example.personaltrainerapp.ui.library
 
+import android.media.MediaPlayer
+import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -22,10 +27,14 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.InsertPhoto
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -37,8 +46,10 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -51,21 +62,34 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.material3.AlertDialog
+import coil3.compose.AsyncImage
 import com.example.personaltrainerapp.data.exercises.MuscleGroups
 import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.ui.common.AppHeader
+import com.example.personaltrainerapp.ui.profile.ProfileSectionHeader
+import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 import kotlin.collections.distinct
 import kotlin.math.roundToInt
 import kotlin.text.all
@@ -89,10 +113,8 @@ fun LibraryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .padding(vertical = 12.dp)
     ) {
-        AppHeader(title = "Library")
-
         NavHost(navController, "Tabs") {
             composable("Tabs") {
                 LibraryTabs(
@@ -106,9 +128,7 @@ fun LibraryScreen(
             }
             composable("New Exercise") {
                 NewExercise(
-                    navController = navController,
-                    viewModel = viewModel,
-                    trainerId = trainerId
+                    navController = navController, viewModel = viewModel, trainerId = trainerId
                 )
             }
             composable("New Workout") {
@@ -121,15 +141,11 @@ fun LibraryScreen(
             }
             composable("Display Exercise") {
                 DisplayExercise(
-                    uiState.selectedExercise!!,
-                    onBack = { navController.popBackStack() })
+                    uiState.selectedExercise!!, onBack = { navController.popBackStack() })
             }
             composable("Display Workout") {
-
                 DisplayWorkout(
-                    uiState.selectedWorkout,
-                    uiState,
-                    navController = navController
+                    uiState.selectedWorkout, uiState, navController = navController
                 )
             }
         }
@@ -151,35 +167,24 @@ fun LibraryTabs(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 12.dp)
+            .padding(vertical = 12.dp, horizontal = 20.dp)
     ) {
+        AppHeader(title = "Library")
         SecondaryTabRow(selectedTabIndex = selectedDestination) {
-            Tab(
-                selected = selectedDestination == 0,
-                onClick = {
-                    selectedDestination = 0
-                },
-                text = {
-                    Text(
-                        text = "Workouts",
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            )
-            Tab(
-                selected = selectedDestination == 1,
-                onClick = {
-                    selectedDestination = 1
-                },
-                text = {
-                    Text(
-                        text = "Exercises",
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            )
+            Tab(selected = selectedDestination == 0, onClick = {
+                selectedDestination = 0
+            }, text = {
+                Text(
+                    text = "Workouts", maxLines = 2, overflow = TextOverflow.Ellipsis
+                )
+            })
+            Tab(selected = selectedDestination == 1, onClick = {
+                selectedDestination = 1
+            }, text = {
+                Text(
+                    text = "Exercises", maxLines = 2, overflow = TextOverflow.Ellipsis
+                )
+            })
         }
         when (selectedDestination) {
             0 -> {
@@ -222,8 +227,7 @@ fun WorkoutsLibrary(
 
         else -> {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
 
                 ListItem(
@@ -233,16 +237,13 @@ fun WorkoutsLibrary(
                     }),
                     leadingContent = {
                         Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "New Workout"
+                            imageVector = Icons.Default.Add, contentDescription = "New Workout"
                         )
-                    }
-                )
+                    })
                 HorizontalDivider(thickness = 2.dp)
                 Spacer(modifier = Modifier.size(12.dp))
                 WorkoutList(
-                    workouts = workouts,
-                    onClick = { workout ->
+                    workouts = workouts, onClick = { workout ->
                         viewModel.selectWorkout(workout)
                         navController.navigate("Display Workout")
                     })
@@ -262,21 +263,23 @@ fun NewWorkout(
     val exercises = remember { mutableStateListOf<Exercise>() }
     var addingExercise by remember { mutableStateOf(false) }
 
+    var currentExercise by remember { mutableIntStateOf(0) }
+
     val nameState = rememberTextFieldState()
     val descState = rememberTextFieldState()
+
+    var showDialog by remember { mutableStateOf(false) }
 
     when (addingExercise) {
         true -> {
             Column() {
                 AppHeader(
-                    title = "Add Exercise",
-                    onBack = { addingExercise = false }
-                )
+                    title = "Add Exercise", onBack = { addingExercise = false })
                 LazyColumn() {
                     items(uiState.exercises) {
                         ListItem(
                             headlineContent = { Text(it.name) },
-                            supportingContent = { Text("" + it.muscleGroups) },
+                            supportingContent = { Text(it.muscleGroups.toString()) },
                             modifier = Modifier.clickable(onClick = {
                                 exercises += it
                                 addingExercise = false
@@ -287,7 +290,6 @@ fun NewWorkout(
             }
         }
 
-
         false -> {
             Column() {
                 AppHeader(
@@ -296,10 +298,9 @@ fun NewWorkout(
                     trailingContent = {
                         IconButton(onClick = {
                             if (!exercises.isEmpty()) {
-
                                 var groupTypeSplit = mutableMapOf<String, Int>()
-                                var groups = exercises.map { it.muscleGroups }.flatten().distinct()
-                                groups.map { group ->
+                                var groups = exercises.flatMap { it.muscleGroups }.distinct()
+                                groups.forEach { group ->
                                     var total = 0
                                     for (exercise: Exercise in exercises) {
                                         if (group in exercise.muscleGroups) {
@@ -318,6 +319,7 @@ fun NewWorkout(
                                     estimatedMinutes = exercises.sumOf { it.estimatedMinutes * it.reps },
                                     exerciseTypeSplit = groupTypeSplit,
                                 )
+
                                 viewModel.saveWorkout(newWorkout)
                                 viewModel.loadAll(trainerId)
                                 navController.popBackStack()
@@ -330,12 +332,9 @@ fun NewWorkout(
                             )
                         }
 
-                    }
-                )
+                    })
                 TextField(
-                    state = nameState,
-                    label = { Text("Name") },
-                    modifier = Modifier.fillMaxWidth()
+                    state = nameState, label = { Text("Name") }, modifier = Modifier.fillMaxWidth()
                 )
                 TextField(
                     state = descState,
@@ -347,48 +346,56 @@ fun NewWorkout(
                     modifier = Modifier.clickable(onClick = { addingExercise = true }),
                     leadingContent = {
                         Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Exercise"
+                            imageVector = Icons.Default.Add, contentDescription = "Add Exercise"
                         )
 
-                    }
-                )
+                    })
                 HorizontalDivider(thickness = 2.dp)
                 LazyColumn {
                     items(exercises) {
                         ListItem(
                             headlineContent = { Text(it.name) },
-                            supportingContent = { Text("" + it.muscleGroups) },
+                            supportingContent = { Text(it.muscleGroups.toString()) },
                             trailingContent = {
-                                OutlinedTextField(
-                                    value = if (it.reps == 0){
-                                        ""
-                                    } else {
-                                        it.reps.toString()
-                                    },
-                                    onValueChange = { value ->
-                                        if (value.all { c -> c.isDigit() } and !value.isEmpty()) {
-                                            exercises[exercises.indexOf(it)] = it.copy(reps = value.toInt())
-                                        }
-                                        if (value.isEmpty()){
-                                            exercises[exercises.indexOf(it)] = it.copy(reps = 0)
-                                        }
-                                    },
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(
-                                        keyboardType = KeyboardType.Number
-                                    ),
-                                    modifier = Modifier.size(80.dp, 60.dp),
-                                    label = { Text("Reps:") }
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = {
+                                        currentExercise = exercises.indexOf(it)
+                                        showDialog = true
+                                    }) {
+                                        Icon(
+                                            imageVector = if (it.uri == "") Icons.Default.AddPhotoAlternate else Icons.Default.InsertPhoto,
+                                            contentDescription = "Add Media"
+                                        )
+                                    }
+                                    OutlinedTextField(
+                                        value = if (it.reps == 0) {
+                                            ""
+                                        } else {
+                                            it.reps.toString()
+                                        },
+                                        onValueChange = { value ->
+                                            if (value.all { c -> c.isDigit() } and !value.isEmpty()) {
+                                                exercises[exercises.indexOf(it)] =
+                                                    it.copy(reps = value.toInt())
+                                            }
+                                            if (value.isEmpty()) {
+                                                exercises[exercises.indexOf(it)] = it.copy(reps = 0)
+                                            }
+                                        },
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Number
+                                        ),
+                                        modifier = Modifier.size(60.dp, 60.dp),
+                                        label = { Text("Reps") })
+                                }
 
                             },
                             leadingContent = {
                                 IconButton(
                                     onClick = {
                                         exercises -= it
-                                    }
-                                ) {
+                                    }) {
                                     Icon(
                                         imageVector = Icons.Default.Remove,
                                         contentDescription = "Remove Exercise"
@@ -399,16 +406,78 @@ fun NewWorkout(
                     }
                 }
             }
+
+            if (showDialog) {
+                Dialog(onDismissRequest = { showDialog = false }, content = {
+                    var type by remember { mutableStateOf("video") }
+                    val launcher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.GetContent()
+                    ) { uri ->
+                        uri?.let {
+                            exercises[currentExercise] = exercises[currentExercise].copy(
+                                uri = uri.toString(),
+                                mediaType = type
+                            )
+                        }
+                        showDialog = false
+                    }
+
+                    Column {
+                        Button(
+                            onClick = {
+                                type = "image"
+                                launcher.launch("image/*")
+                            }) {
+                            Text("Select Image")
+                        }
+
+                        Button(
+                            onClick = {
+                                type = "video"
+                                launcher.launch("video/*")
+                            }) {
+                            Text("Select Video")
+                        }
+                    }
+                })
+            }
         }
     }
-
 }
 
 @Composable
+fun NewMediaPlayer(mediaUrl: String) {
+    Log.d("Multimedia", "Check")
+    val context = LocalContext.current
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(mediaUrl))
+            prepare()
+            playWhenReady = false
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.release()
+        }
+    }
+
+    AndroidView(
+        factory = {
+            PlayerView(context).apply {
+                player = exoPlayer
+            }
+        }, modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp)
+    )
+}
+
+
+@Composable
 fun NewExercise(
-    navController: NavController,
-    viewModel: LibraryViewModel,
-    trainerId: String
+    navController: NavController, viewModel: LibraryViewModel, trainerId: String
 ) {
 
     val nameState = rememberTextFieldState()
@@ -433,22 +502,16 @@ fun NewExercise(
                     navController.popBackStack()
                 }) {
                     Icon(
-                        imageVector = Icons.Default.Save,
-                        contentDescription = "Save Exercise"
+                        imageVector = Icons.Default.Save, contentDescription = "Save Exercise"
                     )
                 }
 
-            }
+            })
+        TextField(
+            state = nameState, label = { Text("Name") }, modifier = Modifier.fillMaxWidth()
         )
         TextField(
-            state = nameState,
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        TextField(
-            state = descState,
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth()
+            state = descState, label = { Text("Description") }, modifier = Modifier.fillMaxWidth()
         )
         TextField(
             value = timeState,
@@ -465,18 +528,14 @@ fun NewExercise(
         )
         LazyRow() {
             items(MuscleGroups.all) { type ->
-                FilterChip(
-                    selected = type in tags,
-                    label = { Text(type) },
-                    onClick = {
-                        if (type in tags) {
-                            tags -= type
-                        } else {
-                            tags += type
-                        }
-
+                FilterChip(selected = type in tags, label = { Text(type) }, onClick = {
+                    if (type in tags) {
+                        tags -= type
+                    } else {
+                        tags += type
                     }
-                )
+
+                })
             }
         }
     }
@@ -504,28 +563,22 @@ fun ExercisesLibrary(
                 modifier = Modifier.fillMaxSize()
             ) {
                 ListItem(
-                    headlineContent = { Text("New Exercise") },
-                    leadingContent = {
+                    headlineContent = { Text("New Exercise") }, leadingContent = {
                         Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "New Exercise"
+                            imageVector = Icons.Default.Add, contentDescription = "New Exercise"
                         )
-                    },
-                    modifier = Modifier.clickable(
+                    }, modifier = Modifier.clickable(
                         onClick = {
                             navController.navigate("New Exercise")
-                        }
-                    )
+                        })
                 )
                 HorizontalDivider(thickness = 2.dp)
                 Spacer(modifier = Modifier.size(12.dp))
                 ExerciseList(
-                    exercises = exercises,
-                    onClick = { exercise ->
+                    exercises = exercises, onClick = { exercise ->
                         viewModel.selectExercise(exercise)
                         navController.navigate("Display Exercise")
-                    }
-                )
+                    })
             }
         }
     }
@@ -533,15 +586,12 @@ fun ExercisesLibrary(
 
 @Composable
 fun ExerciseList(
-    exercises: List<Exercise>,
-    onClick: (Exercise) -> Unit
+    exercises: List<Exercise>, onClick: (Exercise) -> Unit
 ) {
     LazyColumn() {
         items(exercises) { exercise ->
             ExerciseListItem(
-                exercise = exercise,
-                onClick = { onClick(exercise) }
-            )
+                exercise = exercise, onClick = { onClick(exercise) })
         }
     }
 }
@@ -549,17 +599,12 @@ fun ExerciseList(
 
 @Composable
 fun WorkoutList(
-    workouts: List<Workout>,
-    onClick: (Workout) -> Unit,
-    canOpen: Boolean = true
+    workouts: List<Workout>, onClick: (Workout) -> Unit, canOpen: Boolean = true
 ) {
     LazyColumn() {
         items(workouts) { workout ->
             WorkoutListItem(
-                workout = workout,
-                onClick = { onClick(workout)
-                Log.d("Lists", workout.name)},
-                canOpen = canOpen
+                workout = workout, onClick = { onClick(workout) }, canOpen = canOpen
             )
         }
     }
@@ -567,150 +612,151 @@ fun WorkoutList(
 
 @Composable
 fun WorkoutListItem(
-    workout: Workout,
-    onClick: () -> Unit,
-    canOpen: Boolean = true
+    workout: Workout, onClick: () -> Unit, canOpen: Boolean = true
 ) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = workout.name,
-                fontWeight = FontWeight.SemiBold
-            )
-        },
-        leadingContent = {
+    ListItem(headlineContent = {
+        Text(
+            text = workout.name, fontWeight = FontWeight.SemiBold
+        )
+    }, leadingContent = {
+        Icon(
+            imageVector = Icons.Default.FitnessCenter,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+    }, supportingContent = {
+        Text(
+            workout.estimatedMinutes.toString() + " mins: " + workout.exerciseTypeSplit.map { (group, time) -> "$time% $group" })
+    }, modifier = Modifier.clickable(onClick = onClick), trailingContent = {
+        if (canOpen) {
             Icon(
-                imageVector = Icons.Default.FitnessCenter,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
+                imageVector = Icons.Filled.ChevronRight, contentDescription = "Open Workout"
             )
-        },
-        supportingContent = {
-            Text(
-                workout.estimatedMinutes.toString() + " mins: " + workout.exerciseTypeSplit.map { (group, time) -> "$time% $group" }
-            )
-        },
-        modifier = Modifier.clickable(onClick = onClick),
-        trailingContent = {
-            if (canOpen){
-                Icon(
-                    imageVector = Icons.Filled.ChevronRight,
-                    contentDescription = "Open Workout"
-                )
-            }
         }
-    )
+    })
 }
 
 @Composable
 fun ExerciseListItem(
-    exercise: Exercise,
-    onClick: () -> Unit
+    exercise: Exercise, onClick: () -> Unit
 ) {
     ListItem(
         headlineContent = {
             Text(
-                text = exercise.name,
-                fontWeight = FontWeight.SemiBold
+                text = exercise.name, fontWeight = FontWeight.SemiBold
             )
-        },
-        leadingContent = {
+        }, leadingContent = {
             Icon(
                 imageVector = Icons.Default.FitnessCenter,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp)
             )
-        },
-        supportingContent = {
+        }, supportingContent = {
             Text(
                 "" + exercise.muscleGroups
             )
-        },
-        modifier = Modifier.clickable(onClick = onClick)
+        }, modifier = Modifier.clickable(onClick = onClick)
     )
 }
 
 
 @Composable
 fun DisplayWorkout(
-    workout: Workout?,
-    uiState: LibraryUiState,
-    navController: NavController
+    workout: Workout?, uiState: LibraryUiState, navController: NavController
 ) {
 
+    var showExercise by remember { mutableStateOf(false) }
+    var media = remember { mutableStateListOf("", "") }
     Column(
-        Modifier
-            .fillMaxSize()
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         AppHeader(title = workout!!.name, onBack = {
             navController.popBackStack()
         })
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(workout.description)
-        Spacer(modifier = Modifier.height(16.dp))
+        ProfileSectionHeader("Description")
+        Text(
+            text = workout.description,
+            Modifier.padding(horizontal = 16.dp)
+        )
+        ProfileSectionHeader("Exercises")
         LazyColumn {
             items(workout.exercises) { exercise ->
                 ListItem(
                     headlineContent = { Text(exercise.name) },
                     supportingContent = { Text("" + exercise.muscleGroups) },
                     trailingContent = {
-                        Column {
-                            Text("Reps: " + exercise.reps)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (exercise.uri != "") {
+                                IconButton(
+                                    onClick = {
+                                        media[0] = exercise.mediaType
+                                        media[1] = exercise.uri
+                                        showExercise = true
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Photo,
+                                        contentDescription = "Exercise Media"
+                                    )
+                                }
+                            }
 
+                            Text(
+                                text = "Reps: " + exercise.reps,
+                                fontSize = 16.sp
+                            )
                         }
                     }
                 )
             }
         }
-
     }
+    if (showExercise) Dialog(
+        onDismissRequest = {
+            showExercise = false
+        },
+        content = {
+            Log.d("Multimedia", media.toString())
+            if (media[0] == "image") {
+                AsyncImage(
+                    model = media[1],
+                    contentDescription = "How to perform exercise",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .width(220.dp)
+                )
+            } else if (media[0] == "video") {
+                NewMediaPlayer(media[1])
+            }
+        })
 }
 
 @Composable
 fun RepsInput(
-    value: String,
-    onRepsChange: (String) -> Unit
+    value: String, onRepsChange: (String) -> Unit
 ) {
     OutlinedTextField(
-        value = value,
-        onValueChange = {
+        value = value, onValueChange = {
             if (it.isEmpty() || it.all { c -> c.isDigit() }) {
                 onRepsChange(it)
             }
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(
+        }, singleLine = true, keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number
-        ),
-        modifier = Modifier.size(80.dp, 60.dp),
-        label = { Text("Reps:") }
-    )
+        ), modifier = Modifier.size(80.dp, 60.dp), label = { Text("Reps:") })
 }
 
 @Composable
 fun DisplayExercise(
-    exercise: Exercise,
-    onBack: () -> Unit
+    exercise: Exercise, onBack: () -> Unit
 ) {
     Column(
-        Modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-
+        Modifier.fillMaxSize()
     ) {
-        AppHeader(title = "Exercise", onBack = onBack)
-        ListItem(
-            headlineContent = { Text(exercise.name) },
-            overlineContent = { Text("Name") }
-        )
-        ListItem(
-            headlineContent = { Text(exercise.description) },
-            overlineContent = { Text("Name") }
-        )
-        ListItem(
-            headlineContent = { Text(exercise.estimatedMinutes.toString()) },
-            overlineContent = { Text("Time per rep (Minutes") }
-        )
+        AppHeader(title = exercise.name, onBack = onBack)
+        ProfileSectionHeader("Description")
+        ListItem(headlineContent = { Text(exercise.description) })
+        ProfileSectionHeader("Time per rep (Minutes): ${exercise.estimatedMinutes}")
 
 
     }

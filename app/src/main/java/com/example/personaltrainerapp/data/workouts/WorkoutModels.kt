@@ -1,5 +1,6 @@
 package com.example.personaltrainerapp.data.workouts
 
+import android.net.Uri
 import com.google.firebase.Timestamp
 import java.time.LocalDateTime
 
@@ -8,7 +9,7 @@ data class Workout(
     val trainerId: String = "",
     val traineeId: String = "",
     val name: String = "",
-    val description: String = "Placeholder Description of exercise",
+    val description: String = "",
     val startTime: Timestamp = Timestamp.now(),
     val endTime: Timestamp = Timestamp.now(),
     val exercises: List<Exercise> = emptyList(),
@@ -24,5 +25,7 @@ data class Exercise(
     var reps: Int = 8,
     val estimatedMinutes: Int = 0,
     val completed: Boolean = false,
-    val trainerId: String = ""
+    val trainerId: String = "",
+    val uri : String = "",
+    val mediaType: String = ""
 )

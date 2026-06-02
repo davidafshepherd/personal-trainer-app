@@ -1,10 +1,13 @@
 package com.example.personaltrainerapp.data.workouts
 
+import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import com.example.personaltrainerapp.data.user.UserProfile
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import java.time.Duration
 import java.time.Instant
@@ -17,7 +20,14 @@ import kotlin.math.roundToInt
 class RealWorkoutsRepository : WorkoutsRepository {
 
     private val db = FirebaseFirestore.getInstance()
+    private val storage = FirebaseStorage.getInstance()
 
+
+    suspend fun uploadMedia(uri: String, mediaId:String): Uri {
+        val ref = storage.reference.child("workout_media/$mediaId")
+        ref.putFile(uri.toUri()).await()
+        return ref.downloadUrl.await()
+    }
     override suspend fun getAllWorkouts(): List<Workout> {
         return try {
             val snapshot = db.collection("workouts")
@@ -146,12 +156,28 @@ class RealWorkoutsRepository : WorkoutsRepository {
                 )
             )
         } catch (e: Exception){
-            Log.d("RealWorkoutsRepository", "Unable to schedule workout")
+            Log.e("RealWorkoutsRepository", "Unable to schedule workout")
         }
     }
 
     override suspend fun saveNewWorkout(workout: Workout) {
         val doc = db.collection("workouts").document()
-        doc.set(workout.copy(id = doc.id))
+        var newWorkout = workout.copy(id = doc.id)
+        for (exercise: Exercise in workout.exercises) {
+            if (exercise.uri != ""){
+                newWorkout = newWorkout.copy(
+                    exercises = workout.exercises.map {
+                        if (it.id == exercise.id){
+                            it.copy(
+                                uri = uploadMedia(exercise.uri, "${doc.id}_${exercise.id}").toString()
+                            )
+                        }else{
+                            it
+                        }
+                    }
+                )
+            }
+        }
+        doc.set(newWorkout)
     }
 }

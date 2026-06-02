@@ -95,14 +95,10 @@ fun TraineesScreen(trainerId: String) {
     val libraryViewModel = remember { LibraryViewModel() }
     val libraryUiState by libraryViewModel.uiState.collectAsState()
 
-    val trainerViewModel = remember { TrainerViewModel() }
-    val trainerUiState by trainerViewModel.uiState.collectAsState()
-
     LaunchedEffect(traineeUiState.myTrainees, traineeUiState.allTrainees) {
         traineeViewModel.loadTrainees(trainerId)
     }
     traineeViewModel.loadAvailability(trainerId)
-    Log.d("TraineeRepository", "Trainees Screen: " + traineeUiState.availability)
 
     NavHost(navController, startDestination = "Trainees") {
         composable("Trainees") {
@@ -136,18 +132,14 @@ fun TraineesScreen(trainerId: String) {
         }
         composable("ScheduleWorkout/{id}") { backStackEntry ->
             val traineeId = backStackEntry.arguments?.getString("id")!!
-            Log.d("Screen", "schedule")
             LaunchedEffect(libraryUiState.workouts) {
                 libraryViewModel.loadAll(trainerId)
             }
             Column() {
                 AppHeader(
-                    title = "Schedule Workout",
-                    onBack = { navController.popBackStack() }
-                )
+                    title = "Schedule Workout", onBack = { navController.popBackStack() })
                 WorkoutList(
-                    workouts = libraryUiState.workouts,
-                    onClick = { workout ->
+                    workouts = libraryUiState.workouts, onClick = { workout ->
                         val slot = traineeUiState.tempSlot
                         if (traineeId != null && slot != null) {
                             libraryViewModel.scheduleWorkout(
@@ -158,15 +150,13 @@ fun TraineesScreen(trainerId: String) {
                             )
                             navController.popBackStack()
                         }
-                    },
-                    canOpen = false
+                    }, canOpen = false
                 )
             }
         }
         composable("Workout Dashboard/{tId}/{wId}") { backStackEntry ->
             val wId = backStackEntry.arguments?.getString("wId")!!
             val tId = backStackEntry.arguments?.getString("tId")!!
-            Log.d("Screen", "dash")
 
             WorkoutDashboard(
                 workoutId = wId,
@@ -175,8 +165,7 @@ fun TraineesScreen(trainerId: String) {
                 traineeUiState = traineeUiState,
                 onBack = {
                     navController.popBackStack()
-                }
-            )
+                })
 
         }
         composable("Requests") {
@@ -205,15 +194,12 @@ fun DisplayRequests(
     canAccept: Boolean,
     viewModel: TraineeViewModel
 ) {
-    Log.d("RequestsTab", "checka")
     Column() {
         AppHeader(
-            title = "Trainer Requests",
-            onBack = onBack
+            title = "Trainer Requests", onBack = onBack
         )
         when {
             isLoading -> {
-                Log.d("RequestsTab", "checklo")
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -222,11 +208,9 @@ fun DisplayRequests(
             }
 
             else -> {
-                Log.d("RequestsTab", "checkr")
                 LazyColumn() {
                     items(requests) { request ->
                         val trainee = trainees.first { it.uid == request.traineeId }
-                        Log.d("RequestsTab", "check1")
 
                         ListItem(
                             headlineContent = { Text(trainee.displayName) },
@@ -241,13 +225,11 @@ fun DisplayRequests(
                                                     traineeId = request.traineeId
                                                 )
                                                 viewModel.updateRequestStatus(
-                                                    request.id,
-                                                    "ACCEPTED"
+                                                    request.id, "ACCEPTED"
                                                 )
                                                 viewModel.loadRequests(trainerId = request.trainerId)
                                             }
-                                        }
-                                    ) {
+                                        }) {
                                         Icon(
                                             imageVector = Icons.Default.CheckCircleOutline,
                                             contentDescription = "Accept"
@@ -257,23 +239,18 @@ fun DisplayRequests(
                                         onClick = {
                                             viewModel.updateRequestStatus(request.id, "REJECTED")
                                             viewModel.loadRequests(trainerId = request.trainerId)
-                                        }
-                                    ) {
+                                        }) {
                                         Icon(
                                             imageVector = Icons.Default.Block,
                                             contentDescription = "Reject"
                                         )
                                     }
                                 }
-                            }
-                        )
+                            })
                     }
                 }
             }
         }
-        Log.d("RequestsTab", requests.size.toString())
-
-
     }
 }
 
@@ -294,14 +271,13 @@ fun WorkoutDashboard(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         AppHeader(
-            title = trainee.displayName + ": " + workout.name,
-            onBack = onBack
+            title = trainee.displayName + ": " + workout.name, onBack = onBack
         )
-        Log.d("TraineeScreen", "header")
+
         val progress = if (workout.exercises.isNotEmpty()) {
             workout.exercises.count { it.completed }.toFloat() / workout.exercises.size.toFloat()
         } else 0f
-        Log.d("TraineeScreen", "progress: $progress")
+
         Box(contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
                 progress = { progress },
@@ -311,15 +287,12 @@ fun WorkoutDashboard(
             val progressText =
                 if (progress.isNaN()) "0%" else (progress * 100).roundToInt().toString() + "%"
             Text(
-                text = progressText,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold
+                text = progressText, fontSize = 40.sp, fontWeight = FontWeight.Bold
             )
         }
 
-        Log.d("TraineeScreen", "circle")
         LazyColumn {
-            items(workout.exercises) { it ->
+            items(workout.exercises) {
                 ListItem(
                     modifier = Modifier.alpha(if (it.completed) 0.5F else 1F),
                     headlineContent = { Text(it.name) },
@@ -328,18 +301,12 @@ fun WorkoutDashboard(
                         Column {
                             Text("Reps: " + it.reps)
                         }
-                    }
-                )
+                    })
                 LinearProgressIndicator(progress = {
-                    (if (it.completed) {
-                        1
-                    } else {
-                        0
-                    }).toFloat()
+                    if (it.completed) 1F else 0F
                 }, modifier = Modifier.fillMaxSize())
             }
         }
-        Log.d("TraineeScreen", "column")
     }
 }
 
@@ -369,27 +336,20 @@ private fun DisplayTrainee(
 
             val now = Timestamp.now()
             var currentWorkout = libraryUiState.workouts.firstOrNull { workout ->
-                workout.startTime <= now &&
-                        workout.endTime >= now &&
-                        workout.traineeId == trainee!!.uid
+                workout.startTime <= now && workout.endTime >= now && workout.traineeId == trainee!!.uid
             }
 
             Column(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 AppHeader(
-                    title = trainee!!.displayName,
-                    onBack = onBack
+                    title = trainee!!.displayName, onBack = onBack
                 )
 
                 ProfileSectionHeader("Exercise Tags")
                 LazyRow() {
                     items(trainee.tags) { tag ->
-                        FilterChip(
-                            selected = true,
-                            label = { Text(tag) },
-                            onClick = {}
-                        )
+                        FilterChip(selected = true, label = { Text(tag) }, onClick = {})
                     }
                 }
 
@@ -397,44 +357,41 @@ private fun DisplayTrainee(
                     ProfileSectionHeader("Current Workout")
                     WorkoutListItem(
                         workout = currentWorkout,
-                        onClick = { navController.navigate("Workout Dashboard/${traineeId}/${currentWorkout.id}") }
-                    )
+                        onClick = { navController.navigate("Workout Dashboard/${traineeId}/${currentWorkout.id}") })
                 }
 
                 ProfileSectionHeader("Upcoming Workouts")
-                val workouts = libraryUiState.workouts.filter { it.traineeId == traineeId && currentWorkout?.id != it.id && it.startTime > now}
-                LazyColumn (modifier = Modifier.height(((75 * workouts.size).coerceAtMost(115)).dp)){
+                val workouts =
+                    libraryUiState.workouts.filter { it.traineeId == traineeId && currentWorkout?.id != it.id && it.startTime > now }
+                LazyColumn(modifier = Modifier.height(((75 * workouts.size).coerceAtMost(115)).dp)) {
                     items(workouts) {
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = it.name,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            },
-                            leadingContent = {
-                                Icon(
-                                    imageVector = Icons.Default.FitnessCenter,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            },
-                            supportingContent = {
-                                Text(
-                                    "${it.startTime.formatDateTime()} - ${it.endTime.formatDateTime(true)}"
-                                )
-                            },
-                            trailingContent = {
-                                IconButton(
-                                    onClick = { libraryViewModel.removeWorkout(it.id) }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Cancel,
-                                        contentDescription = "Remove Workout from Calendar"
+                        ListItem(headlineContent = {
+                            Text(
+                                text = it.name, fontWeight = FontWeight.SemiBold
+                            )
+                        }, leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.FitnessCenter,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }, supportingContent = {
+                            Text(
+                                "${it.startTime.formatDateTime()} - ${
+                                    it.endTime.formatDateTime(
+                                        true
                                     )
-                                }
+                                }"
+                            )
+                        }, trailingContent = {
+                            IconButton(
+                                onClick = { libraryViewModel.removeWorkout(it.id) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Cancel,
+                                    contentDescription = "Remove Workout from Calendar"
+                                )
                             }
-                        )
+                        })
                     }
                 }
 
@@ -446,23 +403,20 @@ private fun DisplayTrainee(
                         onClick = { traineeId: String, date: LocalDate, hour: Int ->
                             traineeViewModel.setTempSlot(traineeId, date, hour)
                             navController.navigate("ScheduleWorkout/${traineeId}")
-                        }
-                    )
+                        })
                 }
 
             }
         }
     }
 }
+
 private fun Timestamp.formatDateTime(justHour: Boolean = false): String {
-    var pattern =  "d/M/yy · h:mm a"
-    if (justHour){
-        pattern =  "h:mm a"
+    var pattern = "d/M/yy · h:mm a"
+    if (justHour) {
+        pattern = "h:mm a"
     }
-    return this.toDate()
-        .toInstant()
-        .atZone(ZoneId.systemDefault())
-        .toLocalDateTime()
+    return this.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         .format(DateTimeFormatter.ofPattern(pattern))
 }
 
@@ -485,7 +439,6 @@ private fun MyTraineesScreen(
     LaunchedEffect(uiState.myTrainees) {
         viewModel.loadTrainees(trainerId)
     }
-    Log.d("Test", "Availability: " + uiState.availability)
     var menuExpanded by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
 
@@ -495,35 +448,25 @@ private fun MyTraineesScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         AppHeader(
-            title = "Trainees",
-            trailingContent = {
+            title = "Trainees", trailingContent = {
                 Box {
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Menu")
                     }
 
                     DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Set Availability") },
-                            onClick = {
-                                menuExpanded = false
-                                showDialog = true
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Approve/Deny Request") },
-                            onClick = {
-                                menuExpanded = false
-                                navController.navigate("requests")
-                            }
-                        )
+                        expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(text = { Text("Set Availability") }, onClick = {
+                            menuExpanded = false
+                            showDialog = true
+                        })
+                        DropdownMenuItem(text = { Text("Approve/Deny Request") }, onClick = {
+                            menuExpanded = false
+                            navController.navigate("requests")
+                        })
                     }
                 }
-            }
-        )
+            })
         if (showDialog) {
             when (isLoading) {
                 true -> Unit
@@ -558,11 +501,9 @@ private fun MyTraineesScreen(
                             ) {
                                 Text("Unlimited: ")
                                 Checkbox(
-                                    checked = unlimited,
-                                    onCheckedChange = {
+                                    checked = unlimited, onCheckedChange = {
                                         unlimited = it
-                                    }
-                                )
+                                    })
                             }
                         }
 
@@ -576,8 +517,7 @@ private fun MyTraineesScreen(
                                 }
                                 viewModel.setTrainerAvailability(trainerId, input)
                                 showDialog = false
-                            }
-                        ) {
+                            }) {
                             Text("Set")
                         }
                     },
@@ -586,8 +526,7 @@ private fun MyTraineesScreen(
                         TextButton(onClick = { showDialog = false }) {
                             Text("Cancel")
                         }
-                    }
-                )
+                    })
             }
         }
         when {
@@ -605,9 +544,7 @@ private fun MyTraineesScreen(
                 ) {
                     items(myTrainees) { trainee ->
                         TraineeListItem(
-                            trainee = trainee,
-                            onClick = { viewTrainee(trainee) }
-                        )
+                            trainee = trainee, onClick = { viewTrainee(trainee) })
                     }
                 }
             }
@@ -617,8 +554,7 @@ private fun MyTraineesScreen(
 
 @Composable
 private fun TraineeListItem(
-    trainee: UserProfile,
-    onClick: () -> Unit
+    trainee: UserProfile, onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -630,8 +566,7 @@ private fun TraineeListItem(
         Surface(
             modifier = Modifier
                 .size(32.dp)
-                .clip(CircleShape),
-            shape = CircleShape
+                .clip(CircleShape), shape = CircleShape
         ) {
             Icon(
                 imageVector = Icons.Default.Person,
@@ -644,15 +579,13 @@ private fun TraineeListItem(
 
         Column {
             Text(
-                text = trainee.displayName,
-                fontWeight = FontWeight.SemiBold
+                text = trainee.displayName, fontWeight = FontWeight.SemiBold
             )
 
             Text(
                 text = trainee.tags.joinToString(", ") { tag ->
                     tag.replaceFirstChar(Char::uppercase)
-                }
-            )
+                })
         }
     }
 }
