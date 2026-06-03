@@ -67,44 +67,55 @@ class NotificationRepository {
         }
     }
 
-    suspend fun createWorkoutScheduledJob(
+    suspend fun createWorkoutScheduledNotifications(
         traineeId: String,
-        workoutId: String
-    ) {
-        try {
-            db.collection("notificationJobs")
-                .add(
-                    mapOf(
-                        "traineeId" to traineeId,
-                        "workoutId" to workoutId,
-                        "type" to "WORKOUT_SCHEDULED",
-                        "createdAt" to System.currentTimeMillis()
-                    )
-                )
-                .await()
-        } catch (e: Exception) {
-            Log.e("NotificationRepository", "Failed to create notification job", e)
-        }
-    }
-
-    suspend fun createWorkoutScheduledEmail(
-        traineeEmail: String,
         workoutName: String
     ) {
         try {
-            db.collection("mail")
-                .add(
-                    mapOf(
-                        "to" to listOf(traineeEmail),
-                        "message" to mapOf(
-                            "subject" to "Workout scheduled",
-                            "text" to "Your trainer has scheduled a new workout: $workoutName."
+            val traineeDoc = db.collection("users")
+                .document(traineeId)
+                .get()
+                .await()
+
+            val traineeEmail = traineeDoc.getString("email") ?: ""
+            val prefs = traineeDoc.get("notificationPreferences") as? Map<*, *>
+
+            val emailEnabled =
+                prefs?.get("emailWorkoutScheduled") as? Boolean ?: true
+
+            val pushEnabled =
+                prefs?.get("pushWorkoutScheduled") as? Boolean ?: true
+
+            if (emailEnabled && traineeEmail.isNotBlank()) {
+                db.collection("mail")
+                    .add(
+                        mapOf(
+                            "to" to listOf(traineeEmail),
+                            "message" to mapOf(
+                                "subject" to "Workout scheduled",
+                                "text" to "Your trainer has scheduled a new workout: $workoutName."
+                            )
                         )
                     )
-                )
-                .await()
+                    .await()
+            }
+
+            if (pushEnabled) {
+                db.collection("notificationJobs")
+                    .add(
+                        mapOf(
+                            "traineeId" to traineeId,
+                            "type" to "WORKOUT_SCHEDULED",
+                            "title" to "Workout scheduled",
+                            "body" to "Your trainer has scheduled a new workout: $workoutName.",
+                            "workoutName" to workoutName,
+                            "createdAt" to System.currentTimeMillis()
+                        )
+                    )
+                    .await()
+            }
         } catch (e: Exception) {
-            Log.e("NotificationRepository", "Failed to create workout email", e)
+            Log.e("NotificationRepository", "Failed to create workout notifications", e)
         }
     }
 }

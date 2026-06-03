@@ -163,24 +163,6 @@ fun TraineesScreen(trainerId: String) {
                                 slot = slot
                             )
 
-                            coroutineScope.launch {
-                                notificationRepository.createWorkoutScheduledJob(
-                                    traineeId = traineeId,
-                                    workoutId = workout.id
-                                )
-                            }
-
-                            val trainee = traineeUiState.allTrainees.firstOrNull { it.uid == traineeId }
-
-                            if (trainee?.email?.isNotBlank() == true) {
-                                coroutineScope.launch {
-                                    notificationRepository.createWorkoutScheduledEmail(
-                                        traineeEmail = trainee.email,
-                                        workoutName = workout.name
-                                    )
-                                }
-                            }
-
                             navController.popBackStack()
                         }
                     },
