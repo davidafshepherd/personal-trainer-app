@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation("com.google.firebase:firebase-messaging")
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)

@@ -49,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,6 +82,8 @@ import java.time.ZoneId
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.math.roundToInt
+import com.example.personaltrainerapp.data.notifications.NotificationRepository
+import kotlinx.coroutines.launch
 
 import java.time.format.DateTimeFormatter
 
@@ -97,6 +100,9 @@ fun TraineesScreen(trainerId: String) {
 
     val trainerViewModel = remember { TrainerViewModel() }
     val trainerUiState by trainerViewModel.uiState.collectAsState()
+
+    val notificationRepository = remember { NotificationRepository() }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(traineeUiState.myTrainees, traineeUiState.allTrainees) {
         traineeViewModel.loadTrainees(trainerId)
@@ -156,6 +162,25 @@ fun TraineesScreen(trainerId: String) {
                                 trainerId = trainerId,
                                 slot = slot
                             )
+
+                            coroutineScope.launch {
+                                notificationRepository.createWorkoutScheduledJob(
+                                    traineeId = traineeId,
+                                    workoutId = workout.id
+                                )
+                            }
+
+                            val trainee = traineeUiState.allTrainees.firstOrNull { it.uid == traineeId }
+
+                            if (trainee?.email?.isNotBlank() == true) {
+                                coroutineScope.launch {
+                                    notificationRepository.createWorkoutScheduledEmail(
+                                        traineeEmail = trainee.email,
+                                        workoutName = workout.name
+                                    )
+                                }
+                            }
+
                             navController.popBackStack()
                         }
                     },
