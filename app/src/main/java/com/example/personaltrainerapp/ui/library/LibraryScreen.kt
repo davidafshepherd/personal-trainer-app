@@ -727,7 +727,30 @@ fun DisplayWorkout(
                         .width(220.dp)
                 )
             } else if (media[0] == "video") {
-                NewMediaPlayer(media[1])
+                val context = LocalContext.current
+                val exoPlayer = remember {
+                    ExoPlayer.Builder(context).build().apply {
+                        setMediaItem(MediaItem.fromUri(media[1]))
+                        prepare()
+                        playWhenReady = false
+                    }
+                }
+
+                DisposableEffect(Unit) {
+                    onDispose {
+                        exoPlayer.release()
+                    }
+                }
+
+                AndroidView(
+                    factory = {
+                        PlayerView(context).apply {
+                            player = exoPlayer
+                        }
+                    }, modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                )
             }
         })
 }
