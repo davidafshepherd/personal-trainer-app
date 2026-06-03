@@ -24,7 +24,8 @@ class TrainerViewModel(
 
     fun loadTrainers() {
         viewModelScope.launch {
-            val trainers = repository.getAllTrainers()
+            val trainers = repository.getAvailableTrainers()
+
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 trainers = trainers

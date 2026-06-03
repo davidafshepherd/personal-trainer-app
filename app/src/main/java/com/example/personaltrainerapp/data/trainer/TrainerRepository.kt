@@ -25,6 +25,35 @@ class TrainerRepository {
         }
     }
 
+    suspend fun getAvailableTrainers(): List<UserProfile> {
+        return try {
+            val trainers = getAllTrainers()
+
+            trainers.filter { trainer ->
+                trainer.availability > 0 &&
+                        getTraineeCountForTrainer(trainer.uid) < trainer.availability
+            }
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to load available trainers", e)
+            emptyList()
+        }
+    }
+
+    private suspend fun getTraineeCountForTrainer(trainerId: String): Int {
+        return try {
+            val snapshot = db.collection("users")
+                .whereEqualTo("role", "TRAINEE")
+                .whereEqualTo("trainerId", trainerId)
+                .get()
+                .await()
+
+            snapshot.size()
+        } catch (e: Exception) {
+            Log.e("TrainerRepository", "Failed to count trainees for trainer", e)
+            0
+        }
+    }
+
     suspend fun getTrainerById(trainerId: String): UserProfile? {
         return try {
             val doc = db.collection("users")
