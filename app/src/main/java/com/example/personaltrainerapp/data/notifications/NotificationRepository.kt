@@ -95,7 +95,7 @@ class NotificationRepository {
             db.collection("mail")
                 .add(
                     mapOf(
-                        "to" to traineeEmail,
+                        "to" to listOf(traineeEmail),
                         "message" to mapOf(
                             "subject" to "Workout scheduled",
                             "text" to "Your trainer has scheduled a new workout: $workoutName."
