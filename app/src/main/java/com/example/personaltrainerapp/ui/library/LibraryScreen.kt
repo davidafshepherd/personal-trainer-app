@@ -493,7 +493,7 @@ fun NewExercise(
                     val newExercise = Exercise(
                         name = nameState.text.toString(),
                         description = descState.text.toString(),
-                        estimatedMinutes = timeState.toInt(),
+                        estimatedMinutes = timeState.toIntOrNull() ?: 0,
                         muscleGroups = tags,
                         trainerId = trainerId
                     )
