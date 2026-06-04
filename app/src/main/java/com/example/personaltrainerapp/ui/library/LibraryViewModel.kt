@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.exercises.ExerciseRepository
+import com.example.personaltrainerapp.data.notifications.NotificationRepository
 import com.example.personaltrainerapp.data.workouts.RealWorkoutsRepository
 import com.example.personaltrainerapp.data.workouts.Workout
 import com.example.personaltrainerapp.data.workouts.WorkoutsRepository
@@ -25,8 +26,8 @@ data class LibraryUiState(
 
 class LibraryViewModel(
     private val wRepository: RealWorkoutsRepository = RealWorkoutsRepository(),
-    private val eRepository: ExerciseRepository = ExerciseRepository()
-
+    private val eRepository: ExerciseRepository = ExerciseRepository(),
+    private val notificationRepository: NotificationRepository = NotificationRepository()
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState
@@ -82,12 +83,18 @@ class LibraryViewModel(
     ) {
         viewModelScope.launch {
             wRepository.scheduleWorkout(
-                workout,
-                traineeId,
-                slot
+                workout = workout,
+                traineeId = traineeId,
+                slot = slot
             )
+
+            notificationRepository.createWorkoutScheduledNotifications(
+                traineeId = traineeId,
+                workoutName = workout.name
+            )
+
+            loadAll(trainerId)
         }
-        loadAll(trainerId)
     }
 
     fun removeWorkout(workoutId: String) {

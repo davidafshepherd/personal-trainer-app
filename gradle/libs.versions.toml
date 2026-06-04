@@ -62,6 +62,7 @@ coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version
 androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeMaterial3" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging-ktx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

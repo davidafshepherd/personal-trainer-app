@@ -35,6 +35,9 @@ import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.data.user.UserRole
 import com.example.personaltrainerapp.ui.common.AppHeader
 import com.google.firebase.auth.FirebaseAuth
+import com.example.personaltrainerapp.data.notifications.NotificationPreferences
+import com.example.personaltrainerapp.data.notifications.NotificationRepository
+import kotlinx.coroutines.launch
 
 /**
  * Profile screen, displays and edits the signed-in user's profile.
@@ -45,8 +48,27 @@ fun ProfileScreen(user: UserProfile, modifier: Modifier = Modifier) {
     val auth = remember { FirebaseAuth.getInstance() }
     val viewModel = viewModel<ProfileViewModel>()
 
+    // Repository and state for trainee workout notification preferences
+    val notificationRepository = remember { NotificationRepository() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var emailWorkoutNotifications by remember { mutableStateOf(true) }
+    var pushWorkoutNotifications by remember { mutableStateOf(true) }
+
     // Seed with the profile already loaded by RootScreen on first composition
     LaunchedEffect(user.uid) { viewModel.seed(user) }
+
+    // Load notification preferences for trainees and store the token for push notifications
+    LaunchedEffect(user.uid) {
+        if (user.role == UserRole.TRAINEE) {
+            val preferences = notificationRepository.getPreferences(user.uid)
+
+            emailWorkoutNotifications = preferences.emailWorkoutScheduled
+            pushWorkoutNotifications = preferences.pushWorkoutScheduled
+
+            notificationRepository.saveFcmToken(user.uid)
+        }
+    }
 
     // Clear any lingering success message when the user navigates away from this screen
     DisposableEffect(Unit) { onDispose { viewModel.clearMessage() } }
@@ -274,6 +296,89 @@ fun ProfileScreen(user: UserProfile, modifier: Modifier = Modifier) {
         }
 
         Spacer(Modifier.height(24.dp))
+
+        // Workout notification preferences, shown only for trainees
+        if (profile?.role == UserRole.TRAINEE) {
+            ProfileSectionHeader(title = "Workout Notifications")
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Email notifications",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Text(
+                        text = "Receive an email when a workout is scheduled.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Switch(
+                    checked = emailWorkoutNotifications,
+                    onCheckedChange = { enabled ->
+                        emailWorkoutNotifications = enabled
+
+                        coroutineScope.launch {
+                            notificationRepository.savePreferences(
+                                user.uid,
+                                NotificationPreferences(
+                                    emailWorkoutScheduled = emailWorkoutNotifications,
+                                    pushWorkoutScheduled = pushWorkoutNotifications
+                                )
+                            )
+                        }
+                    }
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Push notifications",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Text(
+                        text = "Receive a phone notification when a workout is scheduled.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Switch(
+                    checked = pushWorkoutNotifications,
+                    onCheckedChange = { enabled ->
+                        pushWorkoutNotifications = enabled
+
+                        coroutineScope.launch {
+                            notificationRepository.savePreferences(
+                                user.uid,
+                                NotificationPreferences(
+                                    emailWorkoutScheduled = emailWorkoutNotifications,
+                                    pushWorkoutScheduled = pushWorkoutNotifications
+                                )
+                            )
+                        }
+                    }
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+        }
 
         // Logout button
         Button(
