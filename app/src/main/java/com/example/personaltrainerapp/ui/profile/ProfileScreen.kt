@@ -65,8 +65,6 @@ fun ProfileScreen(user: UserProfile, modifier: Modifier = Modifier) {
 
             emailWorkoutNotifications = preferences.emailWorkoutScheduled
             pushWorkoutNotifications = preferences.pushWorkoutScheduled
-
-            notificationRepository.saveFcmToken(user.uid)
         }
     }
 
