@@ -1,6 +1,7 @@
 package com.example.personaltrainerapp.ui.app
 
 import androidx.compose.runtime.*
+import com.example.personaltrainerapp.data.notifications.NotificationRepository
 import com.example.personaltrainerapp.data.user.UserProfile
 import com.example.personaltrainerapp.ui.auth.AuthScreen
 import com.example.personaltrainerapp.ui.common.LoadingScreen
@@ -24,6 +25,7 @@ fun RootScreen() {
     var profile by remember { mutableStateOf<UserProfile?>(null) }
     // True while we are waiting for Firebase Auth or Firestore to respond
     var loading by remember { mutableStateOf(true) }
+    val notificationRepository = remember { NotificationRepository() }
 
     // Keep firebaseUser in sync with Firebase Auth
     // Fires immediately on registration and again on every subsequent sign-in or sign-out
@@ -61,6 +63,14 @@ fun RootScreen() {
                 profile = null
                 loading = false
             }
+    }
+
+    LaunchedEffect(profile?.uid) {
+        val uid = profile?.uid
+
+        if (!uid.isNullOrBlank()) {
+            notificationRepository.saveFcmToken(uid)
+        }
     }
 
     // Show the correct screen based on the current auth and profile state
