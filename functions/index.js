@@ -71,13 +71,14 @@ exports.sendWorkoutScheduledPush = onDocumentCreated(
 
       const message = {
         token: fcmToken,
-        notification: {
-          title: title,
-          body: body,
-        },
         data: {
           type: "WORKOUT_SCHEDULED",
+          title: String(title),
+          body: String(body),
           workoutName: String(job.workoutName || ""),
+        },
+        android: {
+          priority: "high",
         },
       };
 
