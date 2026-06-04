@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
-import com.example.personaltrainerapp.data.trainees.FakeTraineeRepository
 import com.example.personaltrainerapp.data.trainees.TraineeRepository
 import com.example.personaltrainerapp.data.trainer.TrainerRequest
 import com.example.personaltrainerapp.data.user.UserProfile
@@ -48,7 +47,6 @@ class TraineeViewModel(
             _uiState.value = _uiState.value.copy(
                 tempSlot = AvailabilitySlot(traineeId = traineeId, date = date, hour = hour)
             )
-            Log.d("Scheduling", _uiState.value.tempSlot.toString())
         }
     }
 
@@ -81,7 +79,6 @@ class TraineeViewModel(
     fun loadAvailability(trainerId: String){
         viewModelScope.launch {
             val availability = repository.getTrainerAvailability(trainerId)
-            Log.d("TraineeRepository", availability.toString()+"Ee")
 
             _uiState.value = _uiState.value.copy(
                 availability = availability
