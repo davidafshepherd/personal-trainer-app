@@ -25,6 +25,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import com.example.personaltrainerapp.ui.home.TraineeHomeScreen
 import com.example.personaltrainerapp.ui.home.TrainerHomeScreen
+import com.example.personaltrainerapp.ui.stats.StatsScreen
 
 /**
  * Root scaffold for signed-in users.
@@ -78,6 +79,7 @@ fun AppFrame(user: UserProfile, modifier: Modifier = Modifier) {
             }
         ) }
         entry<TrainerTraineesRoute> { TraineesScreen(trainerId = user.uid) }
+        entry<TrainerStatsRoute> { StatsScreen(trainerId = user.uid) }
         entry<TrainerLibraryRoute> { LibraryScreen(trainerId = user.uid) }
         entry<TrainerProfileRoute> { ProfileScreen(user = user) }
     }

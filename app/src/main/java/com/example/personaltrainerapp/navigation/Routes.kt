@@ -11,5 +11,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object TrainerHomeRoute : NavKey
 @Serializable data object TrainerTraineesRoute : NavKey
+@Serializable data object TrainerStatsRoute : NavKey
 @Serializable data object TrainerLibraryRoute : NavKey
 @Serializable data object TrainerProfileRoute : NavKey
