@@ -32,6 +32,28 @@ class TrainerRepositoryTest {
         unmockkAll()
     }
 
+    // ── getAvailableTrainers ──────────────────────────────────────────────────
+
+    @Test
+    fun `getAvailableTrainers returns empty list when Firestore is unavailable`() = runTest {
+        every { mockDb.collection(any()) } throws RuntimeException("Firestore unavailable")
+
+        val result = repository.getAvailableTrainers()
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getAvailableTrainers returns empty list when underlying query throws`() = runTest {
+        val mockCollection = mockk<CollectionReference>()
+        every { mockDb.collection("users") } returns mockCollection
+        every { mockCollection.whereEqualTo(any<String>(), any()) } throws RuntimeException("query error")
+
+        val result = repository.getAvailableTrainers()
+
+        assertTrue(result.isEmpty())
+    }
+
     // ── getAllTrainers ────────────────────────────────────────────────────────
 
     @Test

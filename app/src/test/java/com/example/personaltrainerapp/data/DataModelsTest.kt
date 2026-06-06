@@ -3,6 +3,7 @@ package com.example.personaltrainerapp.data
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import com.example.personaltrainerapp.data.calendar.AvailabilityStatus
 import com.example.personaltrainerapp.data.exercises.MuscleGroups
+import com.example.personaltrainerapp.data.notifications.NotificationPreferences
 import com.example.personaltrainerapp.data.profile.ProfileTags
 import com.example.personaltrainerapp.data.trainer.TrainerRequest
 import com.example.personaltrainerapp.data.user.UserProfile
@@ -162,6 +163,16 @@ class DataModelsTest {
         val groups = listOf("Core", "Legs", "Chest")
         val exercise = Exercise(muscleGroups = groups)
         assertEquals(groups, exercise.muscleGroups)
+    }
+
+    @Test
+    fun `Exercise default uri is empty string`() {
+        assertEquals("", Exercise().uri)
+    }
+
+    @Test
+    fun `Exercise default mediaType is empty string`() {
+        assertEquals("", Exercise().mediaType)
     }
 
     // ── Workout ──────────────────────────────────────────────────────────────
@@ -368,5 +379,49 @@ class DataModelsTest {
     @Test
     fun `ProfileTags has no duplicate entries`() {
         assertEquals(ProfileTags.all.size, ProfileTags.all.toSet().size)
+    }
+
+    // ── NotificationPreferences ───────────────────────────────────────────────
+
+    @Test
+    fun `NotificationPreferences default emailWorkoutScheduled is true`() {
+        assertTrue(NotificationPreferences().emailWorkoutScheduled)
+    }
+
+    @Test
+    fun `NotificationPreferences default pushWorkoutScheduled is true`() {
+        assertTrue(NotificationPreferences().pushWorkoutScheduled)
+    }
+
+    @Test
+    fun `NotificationPreferences equality holds for identical data`() {
+        val p1 = NotificationPreferences(emailWorkoutScheduled = false, pushWorkoutScheduled = true)
+        val p2 = NotificationPreferences(emailWorkoutScheduled = false, pushWorkoutScheduled = true)
+        assertEquals(p1, p2)
+    }
+
+    @Test
+    fun `NotificationPreferences inequality when fields differ`() {
+        val p1 = NotificationPreferences(emailWorkoutScheduled = true, pushWorkoutScheduled = true)
+        val p2 = NotificationPreferences(emailWorkoutScheduled = false, pushWorkoutScheduled = true)
+        assertNotEquals(p1, p2)
+    }
+
+    @Test
+    fun `NotificationPreferences copy updates email flag independently`() {
+        val original = NotificationPreferences(emailWorkoutScheduled = true, pushWorkoutScheduled = true)
+        val updated = original.copy(emailWorkoutScheduled = false)
+        assertTrue(original.emailWorkoutScheduled)
+        assertFalse(updated.emailWorkoutScheduled)
+        assertTrue(updated.pushWorkoutScheduled)
+    }
+
+    @Test
+    fun `NotificationPreferences copy updates push flag independently`() {
+        val original = NotificationPreferences(emailWorkoutScheduled = true, pushWorkoutScheduled = true)
+        val updated = original.copy(pushWorkoutScheduled = false)
+        assertTrue(original.pushWorkoutScheduled)
+        assertFalse(updated.pushWorkoutScheduled)
+        assertTrue(updated.emailWorkoutScheduled)
     }
 }
