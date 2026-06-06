@@ -30,7 +30,7 @@ class TopLevelDestinationTest {
     @Test
     fun `trainer destination labels are Home Trainees Library Stats Profile`() {
         val labels = topLevelDestinationsFor(UserRole.TRAINER).map { it.label }
-        assertEquals(listOf("Home", "Trainees", "Library", "Stats", "Profile"), labels)
+        assertEquals(listOf("Home", "Trainees", "Stats", "Library", "Profile"), labels)
     }
 
     @Test
@@ -58,8 +58,8 @@ class TopLevelDestinationTest {
         val routes = topLevelDestinationsFor(UserRole.TRAINER).map { it.route }
         assertEquals(
             listOf(
-                TrainerHomeRoute, TrainerTraineesRoute, TrainerLibraryRoute,
-                TrainerStatsRoute, TrainerProfileRoute
+                TrainerHomeRoute, TrainerTraineesRoute, TrainerStatsRoute,
+                TrainerLibraryRoute, TrainerProfileRoute
             ),
             routes
         )
