@@ -74,7 +74,7 @@ class TrainerViewModelTest {
 
     @Test
     fun `loadTrainers populates trainers list`() = runTest {
-        coEvery { repository.getAllTrainers() } returns listOf(makeTrainer("t1"), makeTrainer("t2"))
+        coEvery { repository.getAvailableTrainers() } returns listOf(makeTrainer("t1"), makeTrainer("t2"))
 
         viewModel.loadTrainers()
 
@@ -86,7 +86,7 @@ class TrainerViewModelTest {
     @Test
     fun `loadTrainers preserves trainer data`() = runTest {
         val trainer = makeTrainer("t1")
-        coEvery { repository.getAllTrainers() } returns listOf(trainer)
+        coEvery { repository.getAvailableTrainers() } returns listOf(trainer)
 
         viewModel.loadTrainers()
 
@@ -95,7 +95,7 @@ class TrainerViewModelTest {
 
     @Test
     fun `loadTrainers with empty result leaves empty list`() = runTest {
-        coEvery { repository.getAllTrainers() } returns emptyList()
+        coEvery { repository.getAvailableTrainers() } returns emptyList()
 
         viewModel.loadTrainers()
 

@@ -3,6 +3,7 @@ package com.example.personaltrainerapp.data.workouts
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -23,8 +24,10 @@ class RealWorkoutsRepositoryTest {
     @Before
     fun setUp() {
         mockkStatic(FirebaseFirestore::class)
+        mockkStatic(FirebaseStorage::class)
         mockDb = mockk()
         every { FirebaseFirestore.getInstance() } returns mockDb
+        every { FirebaseStorage.getInstance() } returns mockk(relaxed = true)
         repository = RealWorkoutsRepository()
     }
 
@@ -151,5 +154,46 @@ class RealWorkoutsRepositoryTest {
 
         repository.scheduleWorkout(workout, "trainee1", slot)
         // passes if no exception is thrown
+    }
+
+    // ── setWorkoutById ────────────────────────────────────────────────────────
+
+    @Test
+    fun `setWorkoutById does not propagate exception when Firestore is unavailable`() = runTest {
+        every { mockDb.collection(any()) } throws RuntimeException("Firestore unavailable")
+
+        repository.setWorkoutById("w1", Workout(id = "w1"))
+        // passes if no exception is thrown
+    }
+
+    @Test
+    fun `setWorkoutById does not propagate exception when document set fails`() = runTest {
+        val mockCollection = mockk<CollectionReference>()
+        every { mockDb.collection("workouts") } returns mockCollection
+        every { mockCollection.document(any()) } throws RuntimeException("set error")
+
+        repository.setWorkoutById("w1", Workout(id = "w1"))
+        // passes if no exception is thrown
+    }
+
+    // ── markExerciseComplete ──────────────────────────────────────────────────
+
+    @Test
+    fun `markExerciseComplete is a no-op when getWorkoutById returns null`() = runTest {
+        every { mockDb.collection(any()) } throws RuntimeException("Firestore unavailable")
+
+        repository.markExerciseComplete("w1", "e1", true)
+        // getWorkoutById returns null due to Firestore error; markExerciseComplete returns early
+    }
+
+    // ── saveNewWorkout ────────────────────────────────────────────────────────
+
+    @Test
+    fun `saveNewWorkout completes without exception when collection is available`() = runTest {
+        val mockCollection = mockk<CollectionReference>(relaxed = true)
+        every { mockDb.collection("workouts") } returns mockCollection
+
+        repository.saveNewWorkout(Workout(name = "Leg Day"))
+        // fire-and-forget write; passes if no exception is thrown
     }
 }
