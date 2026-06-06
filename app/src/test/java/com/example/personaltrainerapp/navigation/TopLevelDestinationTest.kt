@@ -15,8 +15,8 @@ class TopLevelDestinationTest {
     }
 
     @Test
-    fun `trainer has 4 top-level destinations`() {
-        assertEquals(4, topLevelDestinationsFor(UserRole.TRAINER).size)
+    fun `trainer has 5 top-level destinations`() {
+        assertEquals(5, topLevelDestinationsFor(UserRole.TRAINER).size)
     }
 
     // ── labels ────────────────────────────────────────────────────────────────
@@ -28,9 +28,9 @@ class TopLevelDestinationTest {
     }
 
     @Test
-    fun `trainer destination labels are Home Trainees Library Profile`() {
+    fun `trainer destination labels are Home Trainees Library Stats Profile`() {
         val labels = topLevelDestinationsFor(UserRole.TRAINER).map { it.label }
-        assertEquals(listOf("Home", "Trainees", "Library", "Profile"), labels)
+        assertEquals(listOf("Home", "Trainees", "Library", "Stats", "Profile"), labels)
     }
 
     @Test
@@ -57,7 +57,10 @@ class TopLevelDestinationTest {
     fun `trainer destination routes are in correct order`() {
         val routes = topLevelDestinationsFor(UserRole.TRAINER).map { it.route }
         assertEquals(
-            listOf(TrainerHomeRoute, TrainerTraineesRoute, TrainerLibraryRoute, TrainerProfileRoute),
+            listOf(
+                TrainerHomeRoute, TrainerTraineesRoute, TrainerLibraryRoute,
+                TrainerStatsRoute, TrainerProfileRoute
+            ),
             routes
         )
     }

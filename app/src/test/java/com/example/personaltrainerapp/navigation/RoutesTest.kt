@@ -11,7 +11,8 @@ class RoutesTest {
         TraineeTrainerRoute, TraineeProfileRoute
     )
     private val trainerRoutes = listOf(
-        TrainerHomeRoute, TrainerTraineesRoute, TrainerLibraryRoute, TrainerProfileRoute
+        TrainerHomeRoute, TrainerTraineesRoute, TrainerLibraryRoute,
+        TrainerStatsRoute, TrainerProfileRoute
     )
 
     @Test
@@ -20,8 +21,8 @@ class RoutesTest {
     }
 
     @Test
-    fun `there are exactly 4 trainer routes`() {
-        assertEquals(4, trainerRoutes.size)
+    fun `there are exactly 5 trainer routes`() {
+        assertEquals(5, trainerRoutes.size)
     }
 
     @Test
@@ -41,9 +42,9 @@ class RoutesTest {
     }
 
     @Test
-    fun `all 9 routes combined are distinct`() {
+    fun `all 10 routes combined are distinct`() {
         val all = traineeRoutes + trainerRoutes
-        assertEquals(9, all.toSet().size)
+        assertEquals(10, all.toSet().size)
     }
 
     @Test

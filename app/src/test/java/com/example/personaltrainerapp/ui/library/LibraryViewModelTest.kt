@@ -2,6 +2,7 @@ package com.example.personaltrainerapp.ui.library
 
 import com.example.personaltrainerapp.data.calendar.AvailabilitySlot
 import com.example.personaltrainerapp.data.exercises.ExerciseRepository
+import com.example.personaltrainerapp.data.notifications.NotificationRepository
 import com.example.personaltrainerapp.data.workouts.Exercise
 import com.example.personaltrainerapp.data.workouts.RealWorkoutsRepository
 import com.example.personaltrainerapp.data.workouts.Workout
@@ -31,6 +32,7 @@ class LibraryViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var wRepository: RealWorkoutsRepository
     private lateinit var eRepository: ExerciseRepository
+    private lateinit var notificationRepository: NotificationRepository
     private lateinit var viewModel: LibraryViewModel
 
     private fun makeWorkout(id: String, traineeId: String = "") = Workout(
@@ -51,7 +53,8 @@ class LibraryViewModelTest {
         Dispatchers.setMain(testDispatcher)
         wRepository = mockk()
         eRepository = mockk()
-        viewModel = LibraryViewModel(wRepository, eRepository)
+        notificationRepository = mockk()
+        viewModel = LibraryViewModel(wRepository, eRepository, notificationRepository)
     }
 
     @After
@@ -250,11 +253,26 @@ class LibraryViewModelTest {
         val workout = makeWorkout("w1")
         val slot = AvailabilitySlot("s1", "trainee1", LocalDate.of(2026, 5, 10), 9)
         coEvery { wRepository.scheduleWorkout(any(), any(), any()) } just Runs
+        coEvery { notificationRepository.createWorkoutScheduledNotifications(any(), any()) } just Runs
         coEvery { wRepository.getTrainersWorkouts("trainer1") } returns emptyList()
         coEvery { eRepository.getAllExercises("trainer1") } returns emptyList()
 
         viewModel.scheduleWorkout(workout, "trainee1", "trainer1", slot)
 
         coVerify { wRepository.scheduleWorkout(workout, "trainee1", slot) }
+    }
+
+    @Test
+    fun `scheduleWorkout sends notification for the scheduled trainee`() = runTest {
+        val workout = makeWorkout("w1")
+        val slot = AvailabilitySlot("s1", "trainee1", LocalDate.of(2026, 5, 10), 9)
+        coEvery { wRepository.scheduleWorkout(any(), any(), any()) } just Runs
+        coEvery { notificationRepository.createWorkoutScheduledNotifications(any(), any()) } just Runs
+        coEvery { wRepository.getTrainersWorkouts("trainer1") } returns emptyList()
+        coEvery { eRepository.getAllExercises("trainer1") } returns emptyList()
+
+        viewModel.scheduleWorkout(workout, "trainee1", "trainer1", slot)
+
+        coVerify { notificationRepository.createWorkoutScheduledNotifications("trainee1", workout.name) }
     }
 }
